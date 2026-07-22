@@ -1,0 +1,93 @@
+<puzzle-view class="test-component {#if active}is-active{/if}">
+  <!-- Puzzle expressions in comments stay comments: {#if ignored}{/if} -->
+  <header style="background:{ headerColor }; transform:translateX({ offset }px)">
+    <h1>{ title | trim | capitalize }</h1>
+  </header>
+
+  {#if loading}
+    <p>Loading…</p>
+  {:else if error}
+    <p>{ error.message }</p>
+  {:else}
+    {#for item in items, index}
+      <ItemCard
+        item={ item }
+        position={ index + 1 }
+        @play:once={ play(item) }
+        @keydown:enter:prevent={ open(item) } />
+    {/for}
+
+    {#unless items.length}
+      <p>No items found.</p>
+    {/unless}
+  {/if}
+
+  {#case status}
+    {:when 'ready', 'playing'}<p>Ready</p>
+    {:else}<p>Idle</p>
+  {/case}
+
+  {#svg 'icons/play.svg'}
+
+  {## inline note with an apostrophe won't break }
+  {## outer { user.name } tail }
+  {## escaped brace \} still inside }
+
+  {#comment}
+    Raw body: { interpolation } and {#if flag}branch{/if} and <!-- html -->
+    {#comment}nested opener{/comment}
+    still commented after the inner close
+  {/comment}
+
+  {#comment note text}shorthand{/comment}
+  {#comment} spaced closer {/ comment }
+
+  {#commentary}
+</puzzle-view>
+
+<puzzle-skeleton min-duration="250">
+  <div class="skeleton">
+    {#for 1...4, n}<div class="row">{ n }</div>{/for}
+  </div>
+</puzzle-skeleton>
+
+<scripts lang="ts">
+import { PuzzleView } from '@magic-spells/puzzle';
+import ItemCard from './ItemCard.pzl';
+
+interface Item {
+  id: string;
+  title: string;
+}
+
+export default class TestComponent extends PuzzleView {
+  data(params: Record<string, string>, props: { items?: Item[] }) {
+    return {
+      active: true,
+      error: null,
+      headerColor: '#202030',
+      items: props.items ?? [],
+      loading: false,
+      offset: 0,
+      status: 'ready',
+      title: 'Test Component'
+    };
+  }
+
+  events = {
+    play: (item: Item) => item,
+    open: (item: Item) => item
+  };
+}
+</scripts>
+
+<styles scoped>
+.test-component {
+  display: grid;
+  gap: 1rem;
+}
+
+.row {
+  color: rebeccapurple;
+}
+</styles>

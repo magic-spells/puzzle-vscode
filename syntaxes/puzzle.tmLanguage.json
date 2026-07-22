@@ -1,0 +1,750 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "Puzzle",
+  "scopeName": "text.html.puzzle",
+  "fileTypes": ["pzl"],
+  "patterns": [
+    { "include": "#html-comment" },
+    { "include": "#puzzle-view-block" },
+    { "include": "#puzzle-skeleton-block" },
+    { "include": "#scripts-typescript-block" },
+    { "include": "#scripts-javascript-block" },
+    { "include": "#styles-block" }
+  ],
+  "injections": {
+    "L:source.css.embedded.puzzle-template": {
+      "patterns": [
+        { "include": "#puzzle-directives" },
+        { "include": "#puzzle-interpolation" }
+      ]
+    }
+  },
+  "repository": {
+    "html-comment": {
+      "patterns": [
+        { "include": "text.html.basic#comment" }
+      ]
+    },
+
+    "puzzle-comment-inline": {
+      "begin": "\\{##",
+      "beginCaptures": {
+        "0": { "name": "punctuation.definition.comment.begin.puzzle" }
+      },
+      "end": "\\}",
+      "endCaptures": {
+        "0": { "name": "punctuation.definition.comment.end.puzzle" }
+      },
+      "name": "comment.block.template.puzzle",
+      "contentName": "comment.block.template.puzzle",
+      "patterns": [
+        { "match": "\\\\[{}]", "name": "constant.character.escape.puzzle" },
+        { "include": "#puzzle-comment-brace-balance" }
+      ]
+    },
+
+    "puzzle-comment-brace-balance": {
+      "begin": "\\{",
+      "end": "\\}",
+      "patterns": [
+        { "match": "\\\\[{}]", "name": "constant.character.escape.puzzle" },
+        { "include": "#puzzle-comment-brace-balance" }
+      ]
+    },
+
+    "puzzle-comment-block": {
+      "begin": "\\{#\\s*comment(?![A-Za-z0-9_\\-:.])[^}]*\\}",
+      "beginCaptures": {
+        "0": { "name": "punctuation.definition.comment.begin.puzzle" }
+      },
+      "end": "\\{/\\s*comment\\s*\\}",
+      "endCaptures": {
+        "0": { "name": "punctuation.definition.comment.end.puzzle" }
+      },
+      "name": "comment.block.puzzle",
+      "patterns": [
+        { "include": "#puzzle-comment-block" }
+      ]
+    },
+
+    "puzzle-view-block": {
+      "begin": "(<)(puzzle-view)\\b",
+      "beginCaptures": {
+        "1": { "name": "punctuation.definition.tag.begin.html" },
+        "2": { "name": "entity.name.tag.section.puzzle" }
+      },
+      "end": "(</)(puzzle-view)(>)",
+      "endCaptures": {
+        "1": { "name": "punctuation.definition.tag.begin.html" },
+        "2": { "name": "entity.name.tag.section.puzzle" },
+        "3": { "name": "punctuation.definition.tag.end.html" }
+      },
+      "patterns": [
+        { "include": "#tag-attributes" },
+        {
+          "begin": ">",
+          "beginCaptures": {
+            "0": { "name": "punctuation.definition.tag.end.html" }
+          },
+          "end": "(?=</puzzle-view>)",
+          "contentName": "meta.template.puzzle",
+          "patterns": [
+            { "include": "#template-content" }
+          ]
+        }
+      ]
+    },
+
+    "puzzle-skeleton-block": {
+      "begin": "(<)(puzzle-skeleton)\\b",
+      "beginCaptures": {
+        "1": { "name": "punctuation.definition.tag.begin.html" },
+        "2": { "name": "entity.name.tag.section.puzzle" }
+      },
+      "end": "(</)(puzzle-skeleton)(>)",
+      "endCaptures": {
+        "1": { "name": "punctuation.definition.tag.begin.html" },
+        "2": { "name": "entity.name.tag.section.puzzle" },
+        "3": { "name": "punctuation.definition.tag.end.html" }
+      },
+      "patterns": [
+        { "include": "#skeleton-tag-attributes" },
+        {
+          "begin": ">",
+          "beginCaptures": {
+            "0": { "name": "punctuation.definition.tag.end.html" }
+          },
+          "end": "(?=</puzzle-skeleton>)",
+          "contentName": "meta.template.skeleton.puzzle",
+          "patterns": [
+            { "include": "#template-content" }
+          ]
+        }
+      ]
+    },
+
+    "template-content": {
+      "patterns": [
+        { "include": "#html-comment" },
+        { "include": "#puzzle-comment-inline" },
+        { "include": "#puzzle-comment-block" },
+        { "include": "#puzzle-directives" },
+        { "include": "#puzzle-interpolation" },
+        { "include": "#component-element" },
+        { "include": "#html-element" },
+        { "include": "#component-close-tag" },
+        { "include": "#html-close-tag" },
+        { "include": "text.html.basic#doctype" },
+        { "include": "text.html.basic#entities" }
+      ]
+    },
+
+    "component-element": {
+      "begin": "(<)([A-Z][A-Za-z0-9_]*)\\b",
+      "beginCaptures": {
+        "1": { "name": "punctuation.definition.tag.begin.html" },
+        "2": { "name": "entity.name.tag.component.puzzle" }
+      },
+      "end": "(/>)|(>)",
+      "endCaptures": {
+        "1": { "name": "punctuation.definition.tag.end.html" },
+        "2": { "name": "punctuation.definition.tag.end.html" }
+      },
+      "patterns": [
+        { "include": "#tag-attributes" }
+      ]
+    },
+
+    "html-element": {
+      "begin": "(<)([a-z][A-Za-z0-9:-]*)\\b",
+      "beginCaptures": {
+        "1": { "name": "punctuation.definition.tag.begin.html" },
+        "2": { "name": "entity.name.tag.html" }
+      },
+      "end": "(/>)|(>)",
+      "endCaptures": {
+        "1": { "name": "punctuation.definition.tag.end.html" },
+        "2": { "name": "punctuation.definition.tag.end.html" }
+      },
+      "patterns": [
+        { "include": "#tag-attributes" }
+      ]
+    },
+
+    "component-close-tag": {
+      "match": "(</)([A-Z][A-Za-z0-9_]*)(>)",
+      "captures": {
+        "1": { "name": "punctuation.definition.tag.begin.html" },
+        "2": { "name": "entity.name.tag.component.puzzle" },
+        "3": { "name": "punctuation.definition.tag.end.html" }
+      }
+    },
+
+    "html-close-tag": {
+      "match": "(</)([a-z][A-Za-z0-9:-]*)(>)",
+      "captures": {
+        "1": { "name": "punctuation.definition.tag.begin.html" },
+        "2": { "name": "entity.name.tag.html" },
+        "3": { "name": "punctuation.definition.tag.end.html" }
+      }
+    },
+
+    "tag-attributes": {
+      "patterns": [
+        { "include": "#style-attribute-double" },
+        { "include": "#style-attribute-single" },
+        { "include": "#event-attribute-dotted-modifier" },
+        { "include": "#event-attribute-valid" },
+        { "include": "#event-attribute-invalid-modifier" },
+        { "include": "#event-attribute-missing-expression" },
+        { "include": "#dynamic-attribute" },
+        { "include": "#quoted-attribute-double" },
+        { "include": "#quoted-attribute-single" },
+        { "include": "text.html.basic#attribute" }
+      ]
+    },
+
+    "style-attribute-double": {
+      "begin": "\\b(style)\\s*(=)\\s*(\")",
+      "beginCaptures": {
+        "1": { "name": "entity.other.attribute-name.style.html" },
+        "2": { "name": "punctuation.separator.key-value.html" },
+        "3": { "name": "punctuation.definition.string.begin.html" }
+      },
+      "end": "\"",
+      "endCaptures": {
+        "0": { "name": "punctuation.definition.string.end.html" }
+      },
+      "contentName": "meta.attribute.style.html source.css.embedded.puzzle-template",
+      "patterns": [
+        { "include": "#puzzle-directives" },
+        { "include": "#puzzle-interpolation" },
+        { "include": "#inline-css-double" }
+      ]
+    },
+
+    "style-attribute-single": {
+      "begin": "\\b(style)\\s*(=)\\s*(')",
+      "beginCaptures": {
+        "1": { "name": "entity.other.attribute-name.style.html" },
+        "2": { "name": "punctuation.separator.key-value.html" },
+        "3": { "name": "punctuation.definition.string.begin.html" }
+      },
+      "end": "'",
+      "endCaptures": {
+        "0": { "name": "punctuation.definition.string.end.html" }
+      },
+      "contentName": "meta.attribute.style.html source.css.embedded.puzzle-template",
+      "patterns": [
+        { "include": "#puzzle-directives" },
+        { "include": "#puzzle-interpolation" },
+        { "include": "#inline-css-single" }
+      ]
+    },
+
+    "inline-css-double": {
+      "patterns": [
+        {
+          "begin": "'",
+          "beginCaptures": {
+            "0": { "name": "punctuation.definition.string.begin.css" }
+          },
+          "end": "'",
+          "endCaptures": {
+            "0": { "name": "punctuation.definition.string.end.css" }
+          },
+          "contentName": "string.quoted.single.css"
+        },
+        { "include": "#inline-css-common" }
+      ]
+    },
+
+    "inline-css-single": {
+      "patterns": [
+        {
+          "begin": "\"",
+          "beginCaptures": {
+            "0": { "name": "punctuation.definition.string.begin.css" }
+          },
+          "end": "\"",
+          "endCaptures": {
+            "0": { "name": "punctuation.definition.string.end.css" }
+          },
+          "contentName": "string.quoted.double.css"
+        },
+        { "include": "#inline-css-common" }
+      ]
+    },
+
+    "inline-css-common": {
+      "patterns": [
+        {
+          "match": "--[A-Za-z_][A-Za-z0-9_-]*(?=\\s*:)",
+          "name": "variable.other.custom-property.css"
+        },
+        { "include": "source.css#property-names" },
+        {
+          "match": ":",
+          "name": "punctuation.separator.key-value.css"
+        },
+        {
+          "match": ";",
+          "name": "punctuation.terminator.rule.css"
+        },
+        { "include": "source.css#comment-block" },
+        { "include": "source.css#functions" },
+        { "include": "source.css#numeric-values" },
+        { "include": "source.css#color-keywords" },
+        { "include": "source.css#url" },
+        { "include": "source.css#commas" }
+      ]
+    },
+
+    "event-attribute-dotted-modifier": {
+      "begin": "(@)([$A-Za-z_][$\\w.-]*?)(\\.)((?:prevent|stop|once|enter|escape|tab|space|up|down|left|right|backspace|delete))\\s*(=)\\s*(\\{)",
+      "beginCaptures": {
+        "1": { "name": "keyword.operator.event.puzzle" },
+        "2": { "name": "support.function.event.puzzle" },
+        "3": { "name": "invalid.illegal.event-modifier.puzzle" },
+        "4": { "name": "invalid.illegal.event-modifier.puzzle" },
+        "5": { "name": "punctuation.separator.key-value.html" },
+        "6": { "name": "punctuation.section.embedded.begin.puzzle" }
+      },
+      "end": "\\}",
+      "endCaptures": {
+        "0": { "name": "punctuation.section.embedded.end.puzzle" }
+      },
+      "contentName": "source.js.embedded.puzzle",
+      "patterns": [
+        { "include": "#javascript-expression" }
+      ]
+    },
+
+    "event-attribute-valid": {
+      "begin": "(@)([$A-Za-z_][$\\w.-]*)((?::(?:prevent|stop|once|enter|escape|tab|space|up|down|left|right|backspace|delete))*)\\s*(=)\\s*(\\{)",
+      "beginCaptures": {
+        "1": { "name": "keyword.operator.event.puzzle" },
+        "2": { "name": "support.function.event.puzzle" },
+        "3": { "name": "storage.modifier.event.puzzle" },
+        "4": { "name": "punctuation.separator.key-value.html" },
+        "5": { "name": "punctuation.section.embedded.begin.puzzle" }
+      },
+      "end": "\\}",
+      "endCaptures": {
+        "0": { "name": "punctuation.section.embedded.end.puzzle" }
+      },
+      "contentName": "source.js.embedded.puzzle",
+      "patterns": [
+        { "include": "#javascript-expression" }
+      ]
+    },
+
+    "event-attribute-invalid-modifier": {
+      "begin": "(@)([$A-Za-z_][$\\w.-]*)((?::[A-Za-z][A-Za-z0-9_-]*)+)\\s*(=)\\s*(\\{)",
+      "beginCaptures": {
+        "1": { "name": "keyword.operator.event.puzzle" },
+        "2": { "name": "support.function.event.puzzle" },
+        "3": { "name": "invalid.illegal.event-modifier.puzzle" },
+        "4": { "name": "punctuation.separator.key-value.html" },
+        "5": { "name": "punctuation.section.embedded.begin.puzzle" }
+      },
+      "end": "\\}",
+      "endCaptures": {
+        "0": { "name": "punctuation.section.embedded.end.puzzle" }
+      },
+      "contentName": "source.js.embedded.puzzle",
+      "patterns": [
+        { "include": "#javascript-expression" }
+      ]
+    },
+
+    "event-attribute-missing-expression": {
+      "match": "(@)([$A-Za-z_][$\\w.-]*(?::[A-Za-z][A-Za-z0-9_-]*)*)(?=\\s|/?>)",
+      "captures": {
+        "1": { "name": "keyword.operator.event.puzzle" },
+        "2": { "name": "invalid.illegal.event-binding.puzzle" }
+      }
+    },
+
+    "dynamic-attribute": {
+      "begin": "([:@A-Za-z_][A-Za-z0-9_:.-]*)\\s*(=)\\s*(\\{)",
+      "beginCaptures": {
+        "1": { "name": "entity.other.attribute-name.html" },
+        "2": { "name": "punctuation.separator.key-value.html" },
+        "3": { "name": "punctuation.section.embedded.begin.puzzle" }
+      },
+      "end": "\\}",
+      "endCaptures": {
+        "0": { "name": "punctuation.section.embedded.end.puzzle" }
+      },
+      "contentName": "source.js.embedded.puzzle",
+      "patterns": [
+        { "include": "#javascript-expression" }
+      ]
+    },
+
+    "quoted-attribute-double": {
+      "begin": "([:@A-Za-z_][A-Za-z0-9_:.-]*)\\s*(=)\\s*(\")",
+      "beginCaptures": {
+        "1": { "name": "entity.other.attribute-name.html" },
+        "2": { "name": "punctuation.separator.key-value.html" },
+        "3": { "name": "punctuation.definition.string.begin.html" }
+      },
+      "end": "\"",
+      "endCaptures": {
+        "0": { "name": "punctuation.definition.string.end.html" }
+      },
+      "contentName": "string.quoted.double.html",
+      "patterns": [
+        { "include": "#puzzle-directives" },
+        { "include": "#puzzle-interpolation" },
+        { "include": "text.html.basic#entities" }
+      ]
+    },
+
+    "quoted-attribute-single": {
+      "begin": "([:@A-Za-z_][A-Za-z0-9_:.-]*)\\s*(=)\\s*(')",
+      "beginCaptures": {
+        "1": { "name": "entity.other.attribute-name.html" },
+        "2": { "name": "punctuation.separator.key-value.html" },
+        "3": { "name": "punctuation.definition.string.begin.html" }
+      },
+      "end": "'",
+      "endCaptures": {
+        "0": { "name": "punctuation.definition.string.end.html" }
+      },
+      "contentName": "string.quoted.single.html",
+      "patterns": [
+        { "include": "#puzzle-directives" },
+        { "include": "#puzzle-interpolation" },
+        { "include": "text.html.basic#entities" }
+      ]
+    },
+
+    "puzzle-directives": {
+      "patterns": [
+        { "include": "#if-unless-case-open" },
+        { "include": "#for-open" },
+        { "include": "#svg-open" },
+        { "include": "#else-if-branch" },
+        { "include": "#when-branch" },
+        { "include": "#else-branch" },
+        { "include": "#block-close" },
+        { "include": "#invalid-directive" }
+      ]
+    },
+
+    "if-unless-case-open": {
+      "begin": "(\\{)(#)(if|unless|case)\\b",
+      "beginCaptures": {
+        "1": { "name": "punctuation.section.embedded.begin.puzzle" },
+        "2": { "name": "punctuation.definition.keyword.puzzle" },
+        "3": { "name": "keyword.control.conditional.puzzle" }
+      },
+      "end": "\\}",
+      "endCaptures": {
+        "0": { "name": "punctuation.section.embedded.end.puzzle" }
+      },
+      "contentName": "source.js.embedded.puzzle",
+      "patterns": [
+        { "include": "#javascript-expression" }
+      ]
+    },
+
+    "for-open": {
+      "begin": "(\\{)(#)(for)\\b",
+      "beginCaptures": {
+        "1": { "name": "punctuation.section.embedded.begin.puzzle" },
+        "2": { "name": "punctuation.definition.keyword.puzzle" },
+        "3": { "name": "keyword.control.loop.puzzle" }
+      },
+      "end": "\\}",
+      "endCaptures": {
+        "0": { "name": "punctuation.section.embedded.end.puzzle" }
+      },
+      "contentName": "source.js.embedded.puzzle",
+      "patterns": [
+        { "include": "#range-number-left" },
+        { "include": "#range-operator" },
+        { "include": "#javascript-expression" }
+      ]
+    },
+
+    "svg-open": {
+      "begin": "(\\{)(#)(svg)\\b",
+      "beginCaptures": {
+        "1": { "name": "punctuation.section.embedded.begin.puzzle" },
+        "2": { "name": "punctuation.definition.keyword.puzzle" },
+        "3": { "name": "support.function.inline-svg.puzzle" }
+      },
+      "end": "\\}",
+      "endCaptures": {
+        "0": { "name": "punctuation.section.embedded.end.puzzle" }
+      },
+      "contentName": "source.js.embedded.puzzle",
+      "patterns": [
+        { "include": "#javascript-expression" }
+      ]
+    },
+
+    "else-if-branch": {
+      "begin": "(\\{)(:)(else)(\\s+)(if)\\b",
+      "beginCaptures": {
+        "1": { "name": "punctuation.section.embedded.begin.puzzle" },
+        "2": { "name": "punctuation.definition.keyword.puzzle" },
+        "3": { "name": "keyword.control.conditional.else.puzzle" },
+        "5": { "name": "keyword.control.conditional.if.puzzle" }
+      },
+      "end": "\\}",
+      "endCaptures": {
+        "0": { "name": "punctuation.section.embedded.end.puzzle" }
+      },
+      "contentName": "source.js.embedded.puzzle",
+      "patterns": [
+        { "include": "#javascript-expression" }
+      ]
+    },
+
+    "when-branch": {
+      "begin": "(\\{)(:)(when)\\b",
+      "beginCaptures": {
+        "1": { "name": "punctuation.section.embedded.begin.puzzle" },
+        "2": { "name": "punctuation.definition.keyword.puzzle" },
+        "3": { "name": "keyword.control.conditional.puzzle" }
+      },
+      "end": "\\}",
+      "endCaptures": {
+        "0": { "name": "punctuation.section.embedded.end.puzzle" }
+      },
+      "contentName": "source.js.embedded.puzzle",
+      "patterns": [
+        { "include": "#javascript-expression" }
+      ]
+    },
+
+    "else-branch": {
+      "match": "(\\{)(:)(else)(\\})",
+      "captures": {
+        "1": { "name": "punctuation.section.embedded.begin.puzzle" },
+        "2": { "name": "punctuation.definition.keyword.puzzle" },
+        "3": { "name": "keyword.control.conditional.else.puzzle" },
+        "4": { "name": "punctuation.section.embedded.end.puzzle" }
+      }
+    },
+
+    "block-close": {
+      "match": "(\\{)(/)(if|unless|for|case)(\\})",
+      "captures": {
+        "1": { "name": "punctuation.section.embedded.begin.puzzle" },
+        "2": { "name": "punctuation.definition.keyword.puzzle" },
+        "3": { "name": "keyword.control.end.puzzle" },
+        "4": { "name": "punctuation.section.embedded.end.puzzle" }
+      }
+    },
+
+    "invalid-directive": {
+      "match": "(\\{)([#:/])([A-Za-z][A-Za-z0-9_-]*)(?:\\s+[^}]*)?(\\})",
+      "captures": {
+        "1": { "name": "punctuation.section.embedded.begin.puzzle" },
+        "2": { "name": "punctuation.definition.keyword.puzzle" },
+        "3": { "name": "invalid.illegal.directive.puzzle" },
+        "4": { "name": "punctuation.section.embedded.end.puzzle" }
+      }
+    },
+
+    "puzzle-interpolation": {
+      "begin": "\\{(?![#:/])",
+      "beginCaptures": {
+        "0": { "name": "punctuation.section.embedded.begin.puzzle" }
+      },
+      "end": "\\}",
+      "endCaptures": {
+        "0": { "name": "punctuation.section.embedded.end.puzzle" }
+      },
+      "contentName": "meta.interpolation.puzzle source.js.embedded.puzzle",
+      "patterns": [
+        { "include": "#formatter" },
+        { "include": "#javascript-expression" }
+      ]
+    },
+
+    "formatter": {
+      "match": "(?<!\\|)(\\|)(?![|=])\\s*([_$A-Za-z][_$A-Za-z0-9-]*)(?=\\s*(?:\\(|\\||\\}))",
+      "captures": {
+        "1": { "name": "keyword.operator.formatter.puzzle" },
+        "2": { "name": "variable.function.formatter.puzzle" }
+      }
+    },
+
+    "range-number-left": {
+      "patterns": [
+        {
+          "match": "[0-9](?:_?[0-9])*(?=\\.\\.\\.)",
+          "name": "constant.numeric.decimal.js"
+        }
+      ]
+    },
+
+    "range-operator": {
+      "patterns": [
+        {
+          "match": "\\.\\.\\.",
+          "name": "keyword.operator.range.puzzle"
+        }
+      ]
+    },
+
+    "javascript-expression": {
+      "patterns": [
+        { "include": "source.js#expression" }
+      ]
+    },
+
+    "scripts-typescript-block": {
+      "begin": "(<)(scripts)\\b(?=[^>]*\\blang\\s*=\\s*(?:\"ts\"|'ts'|ts(?=\\s|>))[^>]*>)",
+      "beginCaptures": {
+        "1": { "name": "punctuation.definition.tag.begin.html" },
+        "2": { "name": "entity.name.tag.script.puzzle" }
+      },
+      "end": "(</)(scripts)(>)",
+      "endCaptures": {
+        "1": { "name": "punctuation.definition.tag.begin.html" },
+        "2": { "name": "entity.name.tag.script.puzzle" },
+        "3": { "name": "punctuation.definition.tag.end.html" }
+      },
+      "patterns": [
+        { "include": "#script-tag-attributes" },
+        {
+          "begin": ">",
+          "beginCaptures": {
+            "0": { "name": "punctuation.definition.tag.end.html" }
+          },
+          "end": "(?=</scripts>)",
+          "contentName": "source.ts.embedded.puzzle",
+          "patterns": [
+            { "include": "source.ts" }
+          ]
+        }
+      ]
+    },
+
+    "scripts-javascript-block": {
+      "begin": "(<)(scripts)\\b",
+      "beginCaptures": {
+        "1": { "name": "punctuation.definition.tag.begin.html" },
+        "2": { "name": "entity.name.tag.script.puzzle" }
+      },
+      "end": "(</)(scripts)(>)",
+      "endCaptures": {
+        "1": { "name": "punctuation.definition.tag.begin.html" },
+        "2": { "name": "entity.name.tag.script.puzzle" },
+        "3": { "name": "punctuation.definition.tag.end.html" }
+      },
+      "patterns": [
+        { "include": "#script-tag-attributes" },
+        {
+          "begin": ">",
+          "beginCaptures": {
+            "0": { "name": "punctuation.definition.tag.end.html" }
+          },
+          "end": "(?=</scripts>)",
+          "contentName": "source.js.embedded.puzzle",
+          "patterns": [
+            { "include": "source.js" }
+          ]
+        }
+      ]
+    },
+
+    "script-tag-attributes": {
+      "patterns": [
+        {
+          "match": "\\b(lang)\\s*(=)\\s*(?:(\")((?:js|ts))(\")|(')((?:js|ts))(')|((?:js|ts)))(?=\\s|>)",
+          "captures": {
+            "1": { "name": "entity.other.attribute-name.html" },
+            "2": { "name": "punctuation.separator.key-value.html" },
+            "3": { "name": "punctuation.definition.string.begin.html" },
+            "4": { "name": "string.quoted.double.html" },
+            "5": { "name": "punctuation.definition.string.end.html" },
+            "6": { "name": "punctuation.definition.string.begin.html" },
+            "7": { "name": "string.quoted.single.html" },
+            "8": { "name": "punctuation.definition.string.end.html" },
+            "9": { "name": "string.unquoted.html" }
+          }
+        },
+        {
+          "match": "\\b(lang)\\s*(=)\\s*(?:\"[^\"]*\"|'[^']*'|[^\\s>]+)",
+          "name": "invalid.illegal.section-attribute.puzzle"
+        },
+        {
+          "match": "\\b(?!lang\\b)[A-Za-z_:][A-Za-z0-9_:.-]*",
+          "name": "invalid.illegal.section-attribute.puzzle"
+        }
+      ]
+    },
+
+    "styles-block": {
+      "begin": "(<)(styles)\\b",
+      "beginCaptures": {
+        "1": { "name": "punctuation.definition.tag.begin.html" },
+        "2": { "name": "entity.name.tag.style.puzzle" }
+      },
+      "end": "(</)(styles)(>)",
+      "endCaptures": {
+        "1": { "name": "punctuation.definition.tag.begin.html" },
+        "2": { "name": "entity.name.tag.style.puzzle" },
+        "3": { "name": "punctuation.definition.tag.end.html" }
+      },
+      "patterns": [
+        { "include": "#style-tag-attributes" },
+        {
+          "begin": ">",
+          "beginCaptures": {
+            "0": { "name": "punctuation.definition.tag.end.html" }
+          },
+          "end": "(?=</styles>)",
+          "contentName": "source.css.embedded.puzzle",
+          "patterns": [
+            { "include": "source.css" }
+          ]
+        }
+      ]
+    },
+
+    "style-tag-attributes": {
+      "patterns": [
+        {
+          "match": "\\bscoped\\b",
+          "name": "entity.other.attribute-name.html"
+        },
+        {
+          "match": "\\b[A-Za-z_:][A-Za-z0-9_:.-]*(?:\\s*=\\s*(?:\"[^\"]*\"|'[^']*'|[^\\s>]+))?",
+          "name": "invalid.illegal.section-attribute.puzzle"
+        }
+      ]
+    },
+
+    "skeleton-tag-attributes": {
+      "patterns": [
+        {
+          "match": "\\b(min-duration)\\s*(=)\\s*(?:(\")([0-9]+)(\")|(')([0-9]+)(')|([0-9]+))",
+          "captures": {
+            "1": { "name": "entity.other.attribute-name.html" },
+            "2": { "name": "punctuation.separator.key-value.html" },
+            "3": { "name": "punctuation.definition.string.begin.html" },
+            "4": { "name": "constant.numeric.decimal.puzzle" },
+            "5": { "name": "punctuation.definition.string.end.html" },
+            "6": { "name": "punctuation.definition.string.begin.html" },
+            "7": { "name": "constant.numeric.decimal.puzzle" },
+            "8": { "name": "punctuation.definition.string.end.html" },
+            "9": { "name": "constant.numeric.decimal.puzzle" }
+          }
+        },
+        {
+          "match": "\\b[A-Za-z_:][A-Za-z0-9_:.-]*(?:\\s*=\\s*(?:\"[^\"]*\"|'[^']*'|[^\\s>]+))?",
+          "name": "invalid.illegal.section-attribute.puzzle"
+        }
+      ]
+    }
+  }
+}

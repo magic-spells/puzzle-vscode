@@ -1,0 +1,200 @@
+{
+  "Puzzle Component": {
+    "prefix": "pzl",
+    "body": [
+      "<puzzle-view class=\"${1:component-name}\">",
+      "\t$0",
+      "</puzzle-view>",
+      "",
+      "<scripts>",
+      "import { PuzzleView } from '@magic-spells/puzzle';",
+      "",
+      "export default class ${2:ComponentName} extends PuzzleView {",
+      "\tdata(params, props) {",
+      "\t\treturn {};",
+      "\t}",
+      "",
+      "\tevents = {};",
+      "}",
+      "</scripts>",
+      "",
+      "<styles scoped>",
+      ".${1:component-name} {",
+      "\t/* component styles */",
+      "}",
+      "</styles>"
+    ],
+    "description": "Create a Puzzle component with template, script, and scoped styles"
+  },
+  "Scriptless Puzzle View": {
+    "prefix": "pzlview",
+    "body": [
+      "<puzzle-view class=\"${1:view-name}\">",
+      "\t$0",
+      "</puzzle-view>"
+    ],
+    "description": "Create a valid template-only Puzzle view"
+  },
+  "Puzzle Skeleton": {
+    "prefix": "pzlskeleton",
+    "body": [
+      "<puzzle-skeleton${1: min-duration=\"250\"}>",
+      "\t${2:<div class=\"skeleton\"></div>}",
+      "</puzzle-skeleton>"
+    ],
+    "description": "Create an optional async loading skeleton"
+  },
+  "If Block": {
+    "prefix": "pif",
+    "body": [
+      "{#if ${1:condition}}",
+      "\t${2:<!-- content -->}",
+      "{/if}"
+    ],
+    "description": "Create an if block"
+  },
+  "If Else Block": {
+    "prefix": "pifelse",
+    "body": [
+      "{#if ${1:condition}}",
+      "\t${2:<!-- matching content -->}",
+      "{:else}",
+      "\t${3:<!-- fallback content -->}",
+      "{/if}"
+    ],
+    "description": "Create an if/else block"
+  },
+  "If Else-If Else Block": {
+    "prefix": "pifelseif",
+    "body": [
+      "{#if ${1:firstCondition}}",
+      "\t${2:<!-- first branch -->}",
+      "{:else if ${3:secondCondition}}",
+      "\t${4:<!-- second branch -->}",
+      "{:else}",
+      "\t${5:<!-- fallback -->}",
+      "{/if}"
+    ],
+    "description": "Create a current Puzzle else-if chain"
+  },
+  "For Collection": {
+    "prefix": ["pfor", "peach"],
+    "body": [
+      "{#for ${1:item} in ${2:items}, ${3:index}}",
+      "\t${4:<div>{ ${1:item} }</div>}",
+      "{/for}"
+    ],
+    "description": "Loop over a collection with an optional index"
+  },
+  "For Range": {
+    "prefix": "pforrange",
+    "body": [
+      "{#for ${1:1}...${2:4}, ${3:n}}",
+      "\t${4:<div>{ ${3:n} }</div>}",
+      "{/for}"
+    ],
+    "description": "Loop over an inclusive Puzzle range"
+  },
+  "Unless Block": {
+    "prefix": "punless",
+    "body": [
+      "{#unless ${1:condition}}",
+      "\t${2:<!-- content -->}",
+      "{/unless}"
+    ],
+    "description": "Create an inverted conditional"
+  },
+  "Case Block": {
+    "prefix": "pcase",
+    "body": [
+      "{#case ${1:value}}",
+      "\t{:when ${2:'first'}}",
+      "\t\t${3:<!-- first branch -->}",
+      "\t{:when ${4:'second'}}",
+      "\t\t${5:<!-- second branch -->}",
+      "\t{:else}",
+      "\t\t${6:<!-- fallback -->}",
+      "{/case}"
+    ],
+    "description": "Create a case/when block"
+  },
+  "Inline SVG": {
+    "prefix": "psvg",
+    "body": ["{#svg '${1:icons/name.svg'}}"],
+    "description": "Inline an SVG file at compile time"
+  },
+  "Interpolation": {
+    "prefix": "pinterp",
+    "body": ["{ ${1:expression} }"],
+    "description": "Create a Puzzle interpolation"
+  },
+  "Formatter Chain": {
+    "prefix": "pfilter",
+    "body": ["{ ${1:value} | ${2:trim} | ${3:capitalize} }"],
+    "description": "Create a Liquid-style formatter chain"
+  },
+  "Event Binding": {
+    "prefix": "pevent",
+    "body": ["@${1:click}={ ${2:handler} }"],
+    "description": "Bind an event to a Puzzle expression"
+  },
+  "Modified Event Binding": {
+    "prefix": "peventmod",
+    "body": ["@${1:keydown}:${2:enter}:${3:prevent}={ ${4:handler(event)} }"],
+    "description": "Bind an event using colon-separated modifiers"
+  },
+  "Dynamic Attribute": {
+    "prefix": "pattr",
+    "body": ["${1:disabled}={ ${2:expression} }"],
+    "description": "Create a dynamic attribute"
+  },
+  "Component Import": {
+    "prefix": "pimport",
+    "body": ["import ${1:ComponentName} from '${2:./components/${1:ComponentName}.pzl}';"],
+    "description": "Import a Puzzle component inside <scripts>"
+  },
+  "Data Method": {
+    "prefix": "pdata",
+    "body": [
+      "data(params, props) {",
+      "\treturn {",
+      "\t\t${1:key}: ${2:value}",
+      "\t};",
+      "}"
+    ],
+    "description": "Create a Puzzle data method"
+  },
+  "Events Field": {
+    "prefix": "pevents",
+    "body": [
+      "events = {",
+      "\t${1:handleClick}: (event) => {",
+      "\t\t${2:// event handler logic}",
+      "\t}",
+      "};"
+    ],
+    "description": "Create a Puzzle events class field"
+  },
+  "Store Access": {
+    "prefix": "pstore",
+    "body": [
+      "const store = this.ctx.store;",
+      "const ${1:records} = store.findMany('${2:modelName}');"
+    ],
+    "description": "Read records from the Puzzle datastore"
+  },
+  "Router Navigation": {
+    "prefix": "prouter",
+    "body": ["this.ctx.router.push('${1:/path}');"],
+    "description": "Navigate with the Puzzle router"
+  },
+  "Set Data": {
+    "prefix": "psetdata",
+    "body": [
+      "this.setData({",
+      "\t${1:key}: ${2:value}",
+      "});"
+    ],
+    "description": "Patch reactive view data"
+  }
+}

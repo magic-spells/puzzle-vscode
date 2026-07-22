@@ -1,0 +1,87 @@
+{
+  "name": "puzzle-vscode",
+  "displayName": "Puzzle Framework",
+  "description": "Syntax highlighting and language support for Puzzle Framework (.pzl files)",
+  "version": "0.2.0",
+  "publisher": "magic-spells",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/magic-spells/puzzle-vscode"
+  },
+  "engines": {
+    "vscode": "^1.74.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Snippets",
+    "Other"
+  ],
+  "keywords": [
+    "puzzle",
+    "pzl",
+    "framework",
+    "templates",
+    "single-file-components"
+  ],
+  "activationEvents": [
+    "onLanguage:puzzle",
+    "onCommand:puzzle.createComponent"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "puzzle",
+        "aliases": [
+          "Puzzle",
+          "puzzle"
+        ],
+        "extensions": [
+          ".pzl"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "puzzle",
+        "scopeName": "text.html.puzzle",
+        "path": "./syntaxes/puzzle.tmLanguage.json",
+        "embeddedLanguages": {
+          "source.js.embedded.puzzle": "javascript",
+          "source.ts.embedded.puzzle": "typescript",
+          "source.css.embedded.puzzle": "css",
+          "source.css.embedded.puzzle-template": "css"
+        }
+      }
+    ],
+    "snippets": [
+      {
+        "language": "puzzle",
+        "path": "./snippets/puzzle.json"
+      }
+    ],
+    "commands": [
+      {
+        "command": "puzzle.createComponent",
+        "title": "Puzzle: Insert Component Template"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "lint": "tsc -p ./ --noEmit",
+    "test:grammar": "node test/grammar.test.js",
+    "test": "npm run compile && npm run test:grammar"
+  },
+  "devDependencies": {
+    "@types/node": "16.x",
+    "@types/vscode": "^1.74.0",
+    "@vscode/vsce": "^3.9.2",
+    "typescript": "^4.9.4",
+    "vscode-oniguruma": "^2.0.1",
+    "vscode-textmate": "^9.3.2"
+  }
+}
