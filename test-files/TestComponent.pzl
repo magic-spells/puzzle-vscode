@@ -51,7 +51,7 @@
   </div>
 </puzzle-skeleton>
 
-<scripts lang="ts">
+<script lang="ts">
 import { PuzzleView } from '@magic-spells/puzzle';
 import ItemCard from './ItemCard.pzl';
 
@@ -79,9 +79,9 @@ export default class TestComponent extends PuzzleView {
     open: (item: Item) => item
   };
 }
-</scripts>
+</script>
 
-<styles scoped>
+<style scoped>
 .test-component {
   display: grid;
   gap: 1rem;
@@ -90,4 +90,4 @@ export default class TestComponent extends PuzzleView {
 .row {
   color: rebeccapurple;
 }
-</styles>
+</style>

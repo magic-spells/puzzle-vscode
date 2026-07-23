@@ -601,12 +601,12 @@
     },
 
     "scripts-typescript-block": {
-      "begin": "(<)(scripts)\\b(?=[^>]*\\blang\\s*=\\s*(?:\"ts\"|'ts'|ts(?=\\s|>))[^>]*>)",
+      "begin": "(<)(script)\\b(?=[^>]*\\blang\\s*=\\s*(?:\"ts\"|'ts'|ts(?=\\s|>))[^>]*>)",
       "beginCaptures": {
         "1": { "name": "punctuation.definition.tag.begin.html" },
         "2": { "name": "entity.name.tag.script.puzzle" }
       },
-      "end": "(</)(scripts)(>)",
+      "end": "(</)(script)(>)",
       "endCaptures": {
         "1": { "name": "punctuation.definition.tag.begin.html" },
         "2": { "name": "entity.name.tag.script.puzzle" },
@@ -619,7 +619,7 @@
           "beginCaptures": {
             "0": { "name": "punctuation.definition.tag.end.html" }
           },
-          "end": "(?=</scripts>)",
+          "end": "(?=</script>)",
           "contentName": "source.ts.embedded.puzzle",
           "patterns": [
             { "include": "source.ts" }
@@ -629,12 +629,12 @@
     },
 
     "scripts-javascript-block": {
-      "begin": "(<)(scripts)\\b",
+      "begin": "(<)(script)\\b",
       "beginCaptures": {
         "1": { "name": "punctuation.definition.tag.begin.html" },
         "2": { "name": "entity.name.tag.script.puzzle" }
       },
-      "end": "(</)(scripts)(>)",
+      "end": "(</)(script)(>)",
       "endCaptures": {
         "1": { "name": "punctuation.definition.tag.begin.html" },
         "2": { "name": "entity.name.tag.script.puzzle" },
@@ -647,7 +647,7 @@
           "beginCaptures": {
             "0": { "name": "punctuation.definition.tag.end.html" }
           },
-          "end": "(?=</scripts>)",
+          "end": "(?=</script>)",
           "contentName": "source.js.embedded.puzzle",
           "patterns": [
             { "include": "source.js" }
@@ -684,12 +684,12 @@
     },
 
     "styles-block": {
-      "begin": "(<)(styles)\\b",
+      "begin": "(<)(style)\\b",
       "beginCaptures": {
         "1": { "name": "punctuation.definition.tag.begin.html" },
         "2": { "name": "entity.name.tag.style.puzzle" }
       },
-      "end": "(</)(styles)(>)",
+      "end": "(</)(style)(>)",
       "endCaptures": {
         "1": { "name": "punctuation.definition.tag.begin.html" },
         "2": { "name": "entity.name.tag.style.puzzle" },
@@ -702,7 +702,7 @@
           "beginCaptures": {
             "0": { "name": "punctuation.definition.tag.end.html" }
           },
-          "end": "(?=</styles>)",
+          "end": "(?=</style>)",
           "contentName": "source.css.embedded.puzzle",
           "patterns": [
             { "include": "source.css" }

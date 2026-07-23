@@ -6,7 +6,7 @@
       "\t$0",
       "</puzzle-view>",
       "",
-      "<scripts>",
+      "<script>",
       "import { PuzzleView } from '@magic-spells/puzzle';",
       "",
       "export default class ${2:ComponentName} extends PuzzleView {",
@@ -16,13 +16,13 @@
       "",
       "\tevents = {};",
       "}",
-      "</scripts>",
+      "</script>",
       "",
-      "<styles scoped>",
+      "<style scoped>",
       ".${1:component-name} {",
       "\t/* component styles */",
       "}",
-      "</styles>"
+      "</style>"
     ],
     "description": "Create a Puzzle component with template, script, and scoped styles"
   },
@@ -151,7 +151,7 @@
   "Component Import": {
     "prefix": "pimport",
     "body": ["import ${1:ComponentName} from '${2:./components/${1:ComponentName}.pzl}';"],
-    "description": "Import a Puzzle component inside <scripts>"
+    "description": "Import a Puzzle component inside <script>"
   },
   "Data Method": {
     "prefix": "pdata",

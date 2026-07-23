@@ -165,10 +165,10 @@ async function main() {
   { count || fallback }
   {#if flags | mask}<span>bitwise</span>{/if}
 </puzzle-view>
-<scripts>
-const fakeClose = "</scripts>";
+<script>
+const fakeClose = "</script>";
 const stillJavaScript = true;
-</scripts>`);
+</script>`);
 
     assertScope(lineWith(edgeCases, '@click.prevent'), '.prevent', 'invalid.illegal.event-modifier.puzzle');
     assertScope(lineWith(edgeCases, '@click:bogus'), ':bogus', 'invalid.illegal.event-modifier.puzzle');

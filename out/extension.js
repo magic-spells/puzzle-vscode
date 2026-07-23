@@ -134,7 +134,7 @@ function componentTemplate(name) {
 \t<!-- ${name} template -->
 </puzzle-view>
 
-<scripts>
+<script>
 import { PuzzleView } from '@magic-spells/puzzle';
 
 export default class ${name} extends PuzzleView {
@@ -144,13 +144,13 @@ export default class ${name} extends PuzzleView {
 
 \tevents = {};
 }
-</scripts>
+</script>
 
-<styles scoped>
+<style scoped>
 .${cssName} {
 \t/* component styles */
 }
-</styles>
+</style>
 `;
 }
 //# sourceMappingURL=extension.js.map

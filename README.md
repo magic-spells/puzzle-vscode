@@ -7,8 +7,8 @@ Svelte-style aliases.
 ## Features
 
 - HTML highlighting in `<puzzle-view>` and `<puzzle-skeleton>`
-- JavaScript in `<scripts>` and TypeScript in `<scripts lang="ts">`
-- CSS in `<styles>` and `<styles scoped>`
+- JavaScript in `<script>` and TypeScript in `<script lang="ts">`
+- CSS in `<style>` and `<style scoped>`
 - CSS plus Puzzle expressions inside inline `style="..."` attributes
 - JavaScript expressions in interpolations, directives, and dynamic attributes
 - Distinct component, event/action, modifier, formatter, and range scopes
@@ -45,7 +45,7 @@ HTML comments suppress Puzzle expressions, so documentation such as
   <div class="skeleton"></div>
 </puzzle-skeleton>
 
-<scripts lang="ts">
+<script lang="ts">
 import { PuzzleView } from '@magic-spells/puzzle';
 
 export default class AlbumView extends PuzzleView {
@@ -57,13 +57,13 @@ export default class AlbumView extends PuzzleView {
     play: (album) => album
   };
 }
-</scripts>
+</script>
 
-<styles scoped>
+<style scoped>
 .album {
   display: grid;
 }
-</styles>
+</style>
 ```
 
 The grammar recognizes:
