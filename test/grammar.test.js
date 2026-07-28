@@ -159,6 +159,39 @@ async function main() {
     // {#commentary} is NOT a comment opener — still an invalid directive
     assertScope(lineWith(tokens, '{#commentary}'), 'commentary', 'invalid.illegal.directive.puzzle');
 
+    // Paired composition markers (D141) — <Slot name="x">…</Slot>,
+    // <Children>…</Children>, <Slot>…</Slot>. Nothing in the grammar special-
+    // cases Slot/Children: they are ordinary capitalized component tags, and
+    // fallback bodies are ordinary template content.
+    const namedSlot = lineWith(tokens, '<Slot name="header">');
+    assertScope(namedSlot, 'Slot', 'entity.name.tag.component.puzzle');
+    // …and the paired close tag on the same line (occurrence 1 of "Slot").
+    assertScope(namedSlot, 'Slot', 'entity.name.tag.component.puzzle', 0, 1);
+    // Fallback body is live template content, not inert text.
+    assertScope(namedSlot, 'title', 'source.js.embedded.puzzle');
+    assertScope(namedSlot, 'capitalize', 'variable.function.formatter.puzzle');
+
+    assertScope(lineWith(tokens, '<Children>'), 'Children', 'entity.name.tag.component.puzzle');
+    assertScope(lineWith(tokens, '</Children>'), 'Children', 'entity.name.tag.component.puzzle');
+    const slotFallbackIf = lineWith(tokens, 'Fallback body');
+    assertScope(slotFallbackIf, 'if', 'keyword.control.conditional.puzzle');
+    assertScope(slotFallbackIf, 'items.length', 'source.js.embedded.puzzle');
+    assertScope(slotFallbackIf, 'ItemCard', 'entity.name.tag.component.puzzle');
+    assertScope(slotFallbackIf, 'items[0]', 'source.js.embedded.puzzle');
+    assertNoScope(slotFallbackIf, 'Fallback body', 'source.js.embedded.puzzle');
+
+    const bareSlot = lineWith(tokens, '<Slot>');
+    assertScope(bareSlot, 'Slot', 'entity.name.tag.component.puzzle');
+    assertScope(bareSlot, 'Slot', 'entity.name.tag.component.puzzle', 0, 1);
+    assertScope(bareSlot, 'offset', 'source.js.embedded.puzzle');
+    assertScope(bareSlot, 'number', 'variable.function.formatter.puzzle');
+    assertScope(bareSlot, 'svg', 'support.function.inline-svg.puzzle');
+    assertNoScope(bareSlot, 'remaining', 'source.js.embedded.puzzle');
+
+    // The self-closing forms still highlight identically.
+    assertScope(lineWith(tokens, '<Children/>'), 'Children', 'entity.name.tag.component.puzzle');
+    assertScope(lineWith(tokens, '<Slot name="footer"/>'), 'Slot', 'entity.name.tag.component.puzzle');
+
     const edgeCases = tokenize(grammar, `<puzzle-view>
   <button @click.prevent={ go } @click:bogus={ go }></button>
   {:elsif stale}
