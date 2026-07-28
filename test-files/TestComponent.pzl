@@ -43,6 +43,16 @@
   {#comment} spaced closer {/ comment }
 
   {#commentary}
+
+  <Card>
+    <Slot name="header"><h2>{ title | capitalize }</h2></Slot>
+    <Children>
+      {#if items.length}<ItemCard item={ items[0] } />{:else}<p>Fallback body</p>{/if}
+    </Children>
+  </Card>
+  <Slot>{ offset | number } remaining{#svg 'icons/empty.svg'}</Slot>
+  <Children/>
+  <Slot name="footer"/>
 </puzzle-view>
 
 <puzzle-skeleton min-duration="250">
