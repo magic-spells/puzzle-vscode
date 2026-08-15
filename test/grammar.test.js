@@ -160,19 +160,22 @@ async function main() {
     assertScope(lineWith(tokens, '{#commentary}'), 'commentary', 'invalid.illegal.directive.puzzle');
 
     // Paired composition markers (D141) — <Slot name="x">…</Slot>,
-    // <Children>…</Children>, <Slot>…</Slot>. Nothing in the grammar special-
-    // cases Slot/Children: they are ordinary capitalized component tags, and
-    // fallback bodies are ordinary template content.
+    // <Children>…</Children>, <Slot>…</Slot>, <Portal>…</Portal>. The grammar
+    // resolves the three markers ahead of ordinary capitalized component tags
+    // and gives them their own scope; fallback bodies stay live template
+    // content.
     const namedSlot = lineWith(tokens, '<Slot name="header">');
-    assertScope(namedSlot, 'Slot', 'entity.name.tag.component.puzzle');
+    assertScope(namedSlot, 'Slot', 'entity.name.tag.marker.puzzle');
     // …and the paired close tag on the same line (occurrence 1 of "Slot").
-    assertScope(namedSlot, 'Slot', 'entity.name.tag.component.puzzle', 0, 1);
+    assertScope(namedSlot, 'Slot', 'entity.name.tag.marker.puzzle', 0, 1);
     // Fallback body is live template content, not inert text.
     assertScope(namedSlot, 'title', 'source.js.embedded.puzzle');
     assertScope(namedSlot, 'capitalize', 'variable.function.formatter.puzzle');
 
-    assertScope(lineWith(tokens, '<Children>'), 'Children', 'entity.name.tag.component.puzzle');
-    assertScope(lineWith(tokens, '</Children>'), 'Children', 'entity.name.tag.component.puzzle');
+    assertScope(lineWith(tokens, '<Children>'), 'Children', 'entity.name.tag.marker.puzzle');
+    assertScope(lineWith(tokens, '</Children>'), 'Children', 'entity.name.tag.marker.puzzle');
+    // Ordinary capitalized tags keep the component scope.
+    assertScope(lineWith(tokens, '<Card>'), 'Card', 'entity.name.tag.component.puzzle');
     const slotFallbackIf = lineWith(tokens, 'Fallback body');
     assertScope(slotFallbackIf, 'if', 'keyword.control.conditional.puzzle');
     assertScope(slotFallbackIf, 'items.length', 'source.js.embedded.puzzle');
@@ -181,22 +184,111 @@ async function main() {
     assertNoScope(slotFallbackIf, 'Fallback body', 'source.js.embedded.puzzle');
 
     const bareSlot = lineWith(tokens, '<Slot>');
-    assertScope(bareSlot, 'Slot', 'entity.name.tag.component.puzzle');
-    assertScope(bareSlot, 'Slot', 'entity.name.tag.component.puzzle', 0, 1);
+    assertScope(bareSlot, 'Slot', 'entity.name.tag.marker.puzzle');
+    assertScope(bareSlot, 'Slot', 'entity.name.tag.marker.puzzle', 0, 1);
     assertScope(bareSlot, 'offset', 'source.js.embedded.puzzle');
     assertScope(bareSlot, 'number', 'variable.function.formatter.puzzle');
     assertScope(bareSlot, 'svg', 'support.function.inline-svg.puzzle');
     assertNoScope(bareSlot, 'remaining', 'source.js.embedded.puzzle');
 
     // The self-closing forms still highlight identically.
-    assertScope(lineWith(tokens, '<Children/>'), 'Children', 'entity.name.tag.component.puzzle');
-    assertScope(lineWith(tokens, '<Slot name="footer"/>'), 'Slot', 'entity.name.tag.component.puzzle');
+    assertScope(lineWith(tokens, '<Children/>'), 'Children', 'entity.name.tag.marker.puzzle');
+    assertScope(lineWith(tokens, '<Slot name="footer"/>'), 'Slot', 'entity.name.tag.marker.puzzle');
+
+    // <Portal> (D144) is the third marker and is paired-only.
+    const portal = lineWith(tokens, '<Portal><p>');
+    assertScope(portal, 'Portal', 'entity.name.tag.marker.puzzle');
+    assertScope(portal, 'Portal', 'entity.name.tag.marker.puzzle', 0, 1);
+    assertScope(portal, 'title', 'source.js.embedded.puzzle');
+
+    // Lowercase markers are compile errors (D134).
+    assertScope(lineWith(tokens, '<slot name="nope">'), 'slot', 'invalid.illegal.marker.puzzle');
+    assertScope(lineWith(tokens, '<children>'), 'children', 'invalid.illegal.marker.puzzle');
+    assertScope(lineWith(tokens, '<children>'), 'children', 'invalid.illegal.marker.puzzle', 0, 1);
+    assertScope(lineWith(tokens, '<portal>'), 'portal', 'invalid.illegal.marker.puzzle');
+    // …but a tag that merely starts with a marker name is ordinary HTML.
+    assertScope(lineWith(tokens, '<slot-machine'), 'slot-machine', 'entity.name.tag.html');
+    assertNoScope(lineWith(tokens, '<slot-machine'), 'slot-machine', 'invalid.illegal.marker.puzzle');
+
+    // Directive attributes: key, island, ref, flip.
+    const directiveAttrs = lineWith(tokens, 'listRoot');
+    assertScope(directiveAttrs, 'ref', 'keyword.control.directive.puzzle');
+    assertScope(directiveAttrs, 'listRoot', 'variable.other.ref.puzzle');
+    assertScope(directiveAttrs, 'island', 'keyword.control.directive.puzzle');
+    assertScope(directiveAttrs, 'key', 'keyword.control.directive.puzzle');
+    assertScope(directiveAttrs, 'items[0]', 'source.js.embedded.puzzle');
+    assertScope(directiveAttrs, 'flip', 'keyword.control.directive.puzzle');
+
+    const directiveAttrs2 = lineWith(tokens, 'not-a-directive');
+    assertScope(directiveAttrs2, 'flip', 'keyword.control.directive.puzzle');
+    assertScope(directiveAttrs2, 'offset', 'source.js.embedded.puzzle');
+    assertScope(directiveAttrs2, 'key', 'keyword.control.directive.puzzle');
+    // The interpolated key= form stays live.
+    assertScope(directiveAttrs2, 'offset', 'source.js.embedded.puzzle', 0, 1);
+    // data-island is a plain attribute, not the island directive.
+    assertNoScope(directiveAttrs2, 'data-island', 'keyword.control.directive.puzzle');
+    assertNoScope(directiveAttrs2, 'island', 'keyword.control.directive.puzzle');
+
+    // The `outside` event modifier (D86).
+    assertScope(lineWith(tokens, '@click:outside'), ':outside', 'storage.modifier.event.puzzle');
+    assertNoScope(lineWith(tokens, '@click:outside'), ':outside', 'invalid.illegal.event-modifier.puzzle');
+
+    // {#raw} … {/raw} (D150): braces are inert, HTML stays structural.
+    const rawOpen = lineWith(tokens, '{#raw}');
+    assertScope(rawOpen, 'raw', 'keyword.control.raw.puzzle');
+    assertNoScope(rawOpen, 'raw', 'invalid.illegal.directive.puzzle');
+
+    const rawText = lineWith(tokens, 'Inert braces');
+    assertScope(rawText, 'notInterpolated', 'meta.raw.puzzle');
+    assertNoScope(rawText, 'notInterpolated', 'source.js.embedded.puzzle');
+    assertNoScope(rawText, 'branchless', 'source.js.embedded.puzzle');
+    assertNoScope(rawText, 'never', 'keyword.control.conditional.puzzle');
+    assertNoScope(rawText, 'notAFormatter', 'variable.function.formatter.puzzle');
+    assertNoScope(rawText, '|', 'keyword.operator.formatter.puzzle');
+
+    const rawHtml = lineWith(tokens, 'structural html');
+    assertScope(rawHtml, 'b', 'entity.name.tag.html');
+    assertScope(rawHtml, 'class', 'entity.other.attribute-name.html');
+    // Markers inside a raw body are plain elements, not markers.
+    assertScope(rawHtml, 'Slot', 'entity.name.tag.html');
+    assertNoScope(rawHtml, 'Slot', 'entity.name.tag.marker.puzzle');
+    assertScope(rawHtml, 'Portal', 'entity.name.tag.html');
+    assertNoScope(rawHtml, 'Portal', 'entity.name.tag.marker.puzzle');
+
+    const rawDirectives = lineWith(tokens, 'literalRef');
+    assertScope(rawDirectives, 'Card', 'entity.name.tag.html');
+    assertScope(rawDirectives, 'ref', 'entity.other.attribute-name.html');
+    assertNoScope(rawDirectives, 'ref', 'keyword.control.directive.puzzle');
+    assertNoScope(rawDirectives, 'island', 'keyword.control.directive.puzzle');
+    assertNoScope(rawDirectives, 'flip', 'keyword.control.directive.puzzle');
+
+    const rawEvent = lineWith(tokens, 'inert binding');
+    assertScope(rawEvent, '@click', 'entity.other.attribute-name.html');
+    assertNoScope(rawEvent, '@', 'keyword.operator.event.puzzle');
+    assertScope(rawEvent, 'notAnEvent', 'string.unquoted.html');
+    assertNoScope(rawEvent, 'notAnEvent', 'source.js.embedded.puzzle');
+
+    // {#raw json}: content after the keyword is legal and ignored, and the
+    // closer tolerates whitespace ({/ raw }).
+    const rawHint = lineWith(tokens, '{#raw json}');
+    assertScope(rawHint, 'json', 'comment.block.raw-hint.puzzle');
+    assertNoScope(rawHint, 'json', 'source.js.embedded.puzzle');
+    assertNoScope(rawHint, 'hint', 'source.js.embedded.puzzle');
+    assertScope(rawHint, 'raw', 'keyword.control.raw.puzzle', 0, 1);
+
+    // {#raw} is a compile error inside an attribute value.
+    const rawInAttr = lineWith(tokens, 'illegal in attribute');
+    assertScope(rawInAttr, 'raw', 'invalid.illegal.raw-in-attribute.puzzle');
+    assertScope(rawInAttr, 'raw', 'invalid.illegal.raw-in-attribute.puzzle', 0, 1);
+    assertScope(rawInAttr, 'illegal in attribute', 'string.quoted.double.html');
 
     const edgeCases = tokenize(grammar, `<puzzle-view>
   <button @click.prevent={ go } @click:bogus={ go }></button>
   {:elsif stale}
   { count || fallback }
   {#if flags | mask}<span>bitwise</span>{/if}
+  {#unless done}spaced closer{/ unless }
+  {#rawish}
 </puzzle-view>
 <script>
 const fakeClose = "</script>";
@@ -211,6 +303,10 @@ const stillJavaScript = true;
     assertScope(lineWith(edgeCases, 'flags | mask'), '|', 'keyword.operator.bitwise.js');
     assertNoScope(lineWith(edgeCases, 'flags | mask'), '|', 'keyword.operator.formatter.puzzle');
     assertScope(lineWith(edgeCases, 'stillJavaScript'), 'stillJavaScript', 'source.js.embedded.puzzle');
+    // Closers tolerate whitespace.
+    assertScope(lineWith(edgeCases, '{/ unless }'), 'unless', 'keyword.control.end.puzzle', 0, 1);
+    // A keyword that merely starts with `raw` is not the raw block.
+    assertScope(lineWith(edgeCases, '{#rawish}'), 'rawish', 'invalid.illegal.directive.puzzle');
 
     console.log('Puzzle TextMate grammar tests passed');
 }

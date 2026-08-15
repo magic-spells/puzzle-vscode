@@ -34,6 +34,7 @@ const EVENT_MODIFIERS = [
     'prevent',
     'stop',
     'once',
+    'outside',
     'enter',
     'escape',
     'tab',
@@ -97,13 +98,13 @@ function provideHover(
     }
 
     const line = document.lineAt(position.line).text;
-    const directivePattern = /\{(?:#(?:if|unless|for|case|svg)|:(?:else(?:\s+if)?|when)|\/(?:if|unless|for|case))\b[^}]*\}/g;
+    const directivePattern = /\{(?:#(?:if|unless|for|case|svg|comment|raw)|:(?:else(?:\s+if)?|when)|\/\s*(?:if|unless|for|case|comment|raw))\b[^}]*\}/g;
     for (const match of line.matchAll(directivePattern)) {
         const start = match.index ?? -1;
         const end = start + match[0].length;
         if (start <= position.character && position.character <= end) {
             return new vscode.Hover(
-                'Puzzle template directive. Supported blocks are `if`, `unless`, `for`, and `case`; `svg` is a compile-time inline directive.'
+                'Puzzle template directive. Supported blocks are `if`, `unless`, `for`, `case`, `comment`, and `raw`; `svg` is a void compile-time inline directive.'
             );
         }
     }
@@ -123,7 +124,13 @@ function provideCompletionItems(
             snippet('unless', 'unless ${1:condition}}\n\t${2:content}\n{/unless}', 'Insert an unless block'),
             snippet('for', 'for ${1:item} in ${2:items}, ${3:index}}\n\t${4:content}\n{/for}', 'Insert a collection loop'),
             snippet('case', "case ${1:value}}\n\t{:when ${2:'match'}}\n\t\t${3:content}\n\t{:else}\n\t\t${4:fallback}\n{/case}", 'Insert a case block'),
-            snippet('svg', "svg '${1:icons/name.svg'}}", 'Inline an SVG file at compile time')
+            snippet('svg', "svg '${1:icons/name.svg'}}", 'Inline an SVG file at compile time'),
+            snippet('comment', 'comment}\n\t${1:notes}\n{/comment}', 'Insert a template comment block'),
+            snippet(
+                'raw',
+                'raw}\n\t${1:literal text — braces are inert}\n{/raw}',
+                'Insert a raw block: no interpolation, directives, formatters, or event bindings'
+            )
         ];
     }
 

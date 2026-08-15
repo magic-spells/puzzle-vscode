@@ -53,6 +53,28 @@
   <Slot>{ offset | number } remaining{#svg 'icons/empty.svg'}</Slot>
   <Children/>
   <Slot name="footer"/>
+
+  <Portal><p>{ title }</p></Portal>
+
+  <div ref="listRoot" island key={ items[0] } flip></div>
+  <div flip={ offset } key="row-{ offset }" data-island="not-a-directive"></div>
+  <button @click:outside={ close() }>Close</button>
+
+  {#raw}
+    Inert braces: { notInterpolated } plus {#if never}branchless{/if} plus { pipes | notAFormatter }
+    <b class="bold">structural html</b> and <Slot/> and <Portal>plain tag</Portal>
+    <Card ref="literalRef" island key="literalKey" flip>markers are plain here</Card>
+    <button @click={ notAnEvent }>inert binding</button>
+  {/raw}
+
+  {#raw json}{ "hint": "ignored by the compiler" }{/ raw }
+
+  <slot name="nope"></slot>
+  <children></children>
+  <portal></portal>
+  <slot-machine class="not-a-marker"></slot-machine>
+
+  <p class="{#raw}illegal in attribute{/raw}">attribute raw</p>
 </puzzle-view>
 
 <puzzle-skeleton min-duration="250">

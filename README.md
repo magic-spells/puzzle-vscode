@@ -66,21 +66,30 @@ export default class AlbumView extends PuzzleView {
 </style>
 ```
 
-The grammar recognizes:
+The grammar tracks **Puzzle 0.6.0** and recognizes:
 
 - `{ expression }` and formatter chains (`| formatter(args)`)
 - `{#if}`, `{:else if}`, `{:else}`, `{/if}`
 - `{#unless}` and `{/unless}`
 - `{#for item in items, index}` and `{#for from...to, value}`
 - `{#case}`, `{:when}`, `{:else}`, and `{/case}`
-- `{#svg 'path/to/icon.svg'}`
+- `{#svg 'path/to/icon.svg'}` (void — it takes no closer)
+- `{#comment}` blocks and `{## inline notes }`
+- `{#raw}…{/raw}`, where braces are literal bytes — no interpolation, block
+  tags, formatter pipes, or event bindings — while HTML stays structural.
+  Content after the keyword is ignored (`{#raw json}`) and the closer tolerates
+  whitespace (`{/ raw }`).
 - `@event={ expression }` and colon modifiers such as
-  `@keydown:enter:prevent={ submit(event) }`
+  `@keydown:enter:prevent={ submit(event) }`, including `@click:outside`
+- The directive attributes `key`, `island`, `ref`, and `flip`
+- The composition markers `<Children>`, `<Slot>`, and `<Portal>`, distinct from
+  ordinary capitalized component tags
 - Capitalized component tags and ordinary HTML tags
 
-Legacy `{#each}`, `{:elsif}`, and dotted event modifiers such as
-`@click.prevent` are intentionally marked invalid because the Puzzle compiler
-does not accept them.
+Legacy `{#each}`, `{:elsif}`, dotted event modifiers such as `@click.prevent`,
+and lowercase markers such as `<slot>` or `<children>` are intentionally marked
+invalid because the Puzzle compiler does not accept them. `{#raw}` inside an
+attribute value is flagged for the same reason.
 
 ## Development
 
@@ -100,6 +109,10 @@ standard installation location.
 | --- | --- |
 | Puzzle section | `entity.name.tag.section.puzzle` |
 | Component tag | `entity.name.tag.component.puzzle` |
+| Composition marker | `entity.name.tag.marker.puzzle` |
+| Directive attribute | `keyword.control.directive.puzzle` |
+| Raw block keyword | `keyword.control.raw.puzzle` |
+| Raw block body | `meta.raw.puzzle` |
 | Event/action sigil (`@`) | `keyword.operator.event.puzzle` |
 | Event/action name | `support.function.event.puzzle` |
 | Event modifier | `storage.modifier.event.puzzle` |
