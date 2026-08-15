@@ -276,6 +276,22 @@ async function main() {
     assertNoScope(rawHint, 'hint', 'source.js.embedded.puzzle');
     assertScope(rawHint, 'raw', 'keyword.control.raw.puzzle', 0, 1);
 
+    // Puzzle grammar RESUMES after the closer. A greedy raw rule swallows the
+    // rest of the line and silently kills every construct after it, so assert
+    // both halves: inert inside, live outside.
+    const rawResume = lineWith(tokens, 'liveAgain');
+    assertScope(rawResume, 'inertAfterHint', 'meta.raw.puzzle');
+    assertNoScope(rawResume, 'inertAfterHint', 'source.js.embedded.puzzle');
+    assertScope(rawResume, 'liveAgain', 'source.js.embedded.puzzle');
+    assertNoScope(rawResume, 'liveAgain', 'meta.raw.puzzle');
+
+    // Raw blocks do NOT nest: the first closer wins, so the inner {#raw} is
+    // body text and " liveTail" is ordinary template text, not raw.
+    const rawNonNesting = lineWith(tokens, 'nonNesting');
+    assertScope(rawNonNesting, 'outer', 'meta.raw.puzzle');
+    assertScope(rawNonNesting, 'nonNesting', 'meta.raw.puzzle');
+    assertNoScope(rawNonNesting, 'liveTail', 'meta.raw.puzzle');
+
     // {#raw} is a compile error inside an attribute value.
     const rawInAttr = lineWith(tokens, 'illegal in attribute');
     assertScope(rawInAttr, 'raw', 'invalid.illegal.raw-in-attribute.puzzle');
