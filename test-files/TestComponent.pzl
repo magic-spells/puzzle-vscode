@@ -56,6 +56,12 @@
 
   <Portal><p>{ title }</p></Portal>
 
+  <Frame.Wrapper class="dotted">
+    <Frame.Content>{ title }</Frame.Content>
+    <Frame.Inner.Deep/>
+  </Frame.Wrapper>
+  <Slot.Custom/>
+
   <div ref="listRoot" island key={ items[0] } flip></div>
   <div flip={ offset } key="row-{ offset }" data-island="not-a-directive"></div>
   <button @click:outside={ close() }>Close</button>

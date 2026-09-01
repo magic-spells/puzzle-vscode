@@ -201,6 +201,24 @@ async function main() {
     assertScope(portal, 'Portal', 'entity.name.tag.marker.puzzle', 0, 1);
     assertScope(portal, 'title', 'source.js.embedded.puzzle');
 
+    // Dotted component tags — component families (D167). The whole member
+    // path carries the component scope, in open, close and self-closing form.
+    assertScope(lineWith(tokens, '<Frame.Wrapper class'), 'Frame.Wrapper', 'entity.name.tag.component.puzzle');
+    assertScope(lineWith(tokens, '<Frame.Wrapper class'), 'Frame.Wrapper', 'entity.name.tag.component.puzzle', 12);
+    assertScope(lineWith(tokens, '</Frame.Wrapper>'), 'Frame.Wrapper', 'entity.name.tag.component.puzzle');
+    assertScope(lineWith(tokens, '</Frame.Wrapper>'), 'Frame.Wrapper', 'entity.name.tag.component.puzzle', 12);
+    const dottedPair = lineWith(tokens, '<Frame.Content>');
+    assertScope(dottedPair, 'Frame.Content', 'entity.name.tag.component.puzzle');
+    assertScope(dottedPair, 'Frame.Content', 'entity.name.tag.component.puzzle', 0, 1);
+    assertScope(dottedPair, 'title', 'source.js.embedded.puzzle');
+    // More than one dot is a legal member path too.
+    assertScope(lineWith(tokens, '<Frame.Inner.Deep/>'), 'Frame.Inner.Deep', 'entity.name.tag.component.puzzle');
+    assertScope(lineWith(tokens, '<Frame.Inner.Deep/>'), 'Frame.Inner.Deep', 'entity.name.tag.component.puzzle', 15);
+    // A dotted name rooted at a marker word is a component tag, not a marker:
+    // markers are exact-match, so <Slot.Custom/> falls through (D167).
+    assertScope(lineWith(tokens, '<Slot.Custom/>'), 'Slot.Custom', 'entity.name.tag.component.puzzle');
+    assertNoScope(lineWith(tokens, '<Slot.Custom/>'), 'Slot.Custom', 'entity.name.tag.marker.puzzle');
+
     // Lowercase markers are compile errors (D134).
     assertScope(lineWith(tokens, '<slot name="nope">'), 'slot', 'invalid.illegal.marker.puzzle');
     assertScope(lineWith(tokens, '<children>'), 'children', 'invalid.illegal.marker.puzzle');
