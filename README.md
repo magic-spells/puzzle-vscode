@@ -84,7 +84,8 @@ The grammar tracks **Puzzle 0.6.0** and recognizes:
 - The directive attributes `key`, `island`, `ref`, and `flip`
 - The composition markers `<Children>`, `<Slot>`, and `<Portal>`, distinct from
   ordinary capitalized component tags
-- Capitalized component tags and ordinary HTML tags
+- Capitalized component tags and ordinary HTML tags, including dotted
+  component-family member paths such as `<Frame.Wrapper>` (D167)
 
 Legacy `{#each}`, `{:elsif}`, dotted event modifiers such as `@click.prevent`,
 and lowercase markers such as `<slot>` or `<children>` are intentionally marked
