@@ -145,7 +145,7 @@
     },
 
     "marker-element": {
-      "begin": "(<)(Children|Slot|Portal)(?![\\w:.-])",
+      "begin": "(<)(Children|Slot|Portal|Snippet)(?![\\w:.-])",
       "beginCaptures": {
         "1": { "name": "punctuation.definition.tag.begin.html" },
         "2": { "name": "entity.name.tag.marker.puzzle" }
@@ -161,7 +161,7 @@
     },
 
     "marker-close-tag": {
-      "match": "(</)(Children|Slot|Portal)(>)",
+      "match": "(</)(Children|Slot|Portal|Snippet)(>)",
       "captures": {
         "1": { "name": "punctuation.definition.tag.begin.html" },
         "2": { "name": "entity.name.tag.marker.puzzle" },

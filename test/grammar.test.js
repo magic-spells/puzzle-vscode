@@ -161,7 +161,7 @@ async function main() {
 
     // Paired composition markers (D141) — <Slot name="x">…</Slot>,
     // <Children>…</Children>, <Slot>…</Slot>, <Portal>…</Portal>. The grammar
-    // resolves the three markers ahead of ordinary capitalized component tags
+    // resolves the four markers ahead of ordinary capitalized component tags
     // and gives them their own scope; fallback bodies stay live template
     // content.
     const namedSlot = lineWith(tokens, '<Slot name="header">');
@@ -195,11 +195,34 @@ async function main() {
     assertScope(lineWith(tokens, '<Children/>'), 'Children', 'entity.name.tag.marker.puzzle');
     assertScope(lineWith(tokens, '<Slot name="footer"/>'), 'Slot', 'entity.name.tag.marker.puzzle');
 
-    // <Portal> (D144) is the third marker and is paired-only.
+    // <Portal> (D144) is a marker too, and is paired-only.
     const portal = lineWith(tokens, '<Portal><p>');
     assertScope(portal, 'Portal', 'entity.name.tag.marker.puzzle');
     assertScope(portal, 'Portal', 'entity.name.tag.marker.puzzle', 0, 1);
     assertScope(portal, 'title', 'source.js.embedded.puzzle');
+
+    // <Snippet> (D166) is the fourth marker: caller-side, paired-only, with
+    // `fits` routing it to a named position and every other attribute a bare
+    // parameter declaration.
+    const snippet = lineWith(tokens, '<Snippet fits="row"');
+    assertScope(snippet, 'Snippet', 'entity.name.tag.marker.puzzle');
+    assertScope(snippet, 'Snippet', 'entity.name.tag.marker.puzzle', 0, 1);
+    assertNoScope(snippet, 'Snippet', 'entity.name.tag.component.puzzle');
+    assertScope(snippet, 'fits', 'entity.other.attribute-name.html');
+    assertScope(snippet, 'group', 'entity.other.attribute-name.html');
+    assertScope(snippet, 'user.name', 'source.js.embedded.puzzle');
+    assertScope(lineWith(tokens, '<UserList users'), 'UserList', 'entity.name.tag.component.puzzle');
+    // A marker hands values out per stamp: on <Slot>/<Children> a valued
+    // attribute is an argument, and the paired body stays a D141 fallback.
+    const argSlot = lineWith(tokens, '<Slot name="row"');
+    assertScope(argSlot, 'Slot', 'entity.name.tag.marker.puzzle');
+    assertScope(argSlot, 'user', 'entity.other.attribute-name.html');
+    assertScope(argSlot, 'items[0]', 'source.js.embedded.puzzle');
+    assertNoScope(argSlot, 'no rows', 'source.js.embedded.puzzle');
+    // …and a capitalized name that merely starts with a marker word is a
+    // component.
+    assertScope(lineWith(tokens, '<SnippetHost/>'), 'SnippetHost', 'entity.name.tag.component.puzzle');
+    assertNoScope(lineWith(tokens, '<SnippetHost/>'), 'SnippetHost', 'entity.name.tag.marker.puzzle');
 
     // Dotted component tags — component families (D167). The whole member
     // path carries the component scope, in open, close and self-closing form.

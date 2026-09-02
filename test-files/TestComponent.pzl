@@ -56,6 +56,12 @@
 
   <Portal><p>{ title }</p></Portal>
 
+  <UserList users={ items }>
+    <Snippet fits="row" user group><b>{ user.name }</b></Snippet>
+  </UserList>
+  <Slot name="row" user={ items[0] }>no rows</Slot>
+  <SnippetHost/>
+
   <Frame.Wrapper class="dotted">
     <Frame.Content>{ title }</Frame.Content>
     <Frame.Inner.Deep/>

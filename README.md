@@ -82,8 +82,8 @@ The grammar tracks **Puzzle 0.6.0** and recognizes:
 - `@event={ expression }` and colon modifiers such as
   `@keydown:enter:prevent={ submit(event) }`, including `@click:outside`
 - The directive attributes `key`, `island`, `ref`, and `flip`
-- The composition markers `<Children>`, `<Slot>`, and `<Portal>`, distinct from
-  ordinary capitalized component tags
+- The composition markers `<Children>`, `<Slot>`, `<Portal>` and `<Snippet>`,
+  distinct from ordinary capitalized component tags
 - Capitalized component tags and ordinary HTML tags, including dotted
   component-family member paths such as `<Frame.Wrapper>` (D167)
 
