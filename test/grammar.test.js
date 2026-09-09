@@ -161,7 +161,7 @@ async function main() {
 
     // Paired composition markers (D141) — <Slot name="x">…</Slot>,
     // <Children>…</Children>, <Slot>…</Slot>, <Portal>…</Portal>. The grammar
-    // resolves the three markers ahead of ordinary capitalized component tags
+    // resolves the four markers ahead of ordinary capitalized component tags
     // and gives them their own scope; fallback bodies stay live template
     // content.
     const namedSlot = lineWith(tokens, '<Slot name="header">');
@@ -195,11 +195,68 @@ async function main() {
     assertScope(lineWith(tokens, '<Children/>'), 'Children', 'entity.name.tag.marker.puzzle');
     assertScope(lineWith(tokens, '<Slot name="footer"/>'), 'Slot', 'entity.name.tag.marker.puzzle');
 
-    // <Portal> (D144) is the third marker and is paired-only.
+    // <Portal> (D144) is a marker too, and is paired-only.
     const portal = lineWith(tokens, '<Portal><p>');
     assertScope(portal, 'Portal', 'entity.name.tag.marker.puzzle');
     assertScope(portal, 'Portal', 'entity.name.tag.marker.puzzle', 0, 1);
     assertScope(portal, 'title', 'source.js.embedded.puzzle');
+
+    // <Snippet> (D166) is the fourth marker: caller-side, paired-only, with
+    // `fits` routing it to a named position and every other attribute a bare
+    // parameter declaration.
+    const snippet = lineWith(tokens, '<Snippet fits="row"');
+    assertScope(snippet, 'Snippet', 'entity.name.tag.marker.puzzle');
+    assertScope(snippet, 'Snippet', 'entity.name.tag.marker.puzzle', 0, 1);
+    assertNoScope(snippet, 'Snippet', 'entity.name.tag.component.puzzle');
+    assertScope(snippet, 'fits', 'entity.other.attribute-name.html');
+    assertScope(snippet, 'group', 'entity.other.attribute-name.html');
+    assertScope(snippet, 'user.name', 'source.js.embedded.puzzle');
+    assertScope(lineWith(tokens, '<UserList users'), 'UserList', 'entity.name.tag.component.puzzle');
+    // `fits` is the only valued attribute; the bare-parameter-only form is the
+    // common one, and the body reads the parameter it declares.
+    const bareParamSnippet = lineWith(tokens, '<Snippet tag>');
+    assertScope(bareParamSnippet, 'Snippet', 'entity.name.tag.marker.puzzle');
+    assertScope(bareParamSnippet, 'Snippet', 'entity.name.tag.marker.puzzle', 0, 1);
+    assertScope(bareParamSnippet, 'tag', 'entity.other.attribute-name.html');
+    assertScope(bareParamSnippet, 'tag.label', 'source.js.embedded.puzzle');
+    // A marker hands values out per stamp: on <Slot>/<Children> a valued
+    // attribute is an argument, and the paired body stays a D141 fallback.
+    const argSlot = lineWith(tokens, '<Slot name="row"');
+    assertScope(argSlot, 'Slot', 'entity.name.tag.marker.puzzle');
+    assertScope(argSlot, 'user', 'entity.other.attribute-name.html');
+    assertScope(argSlot, 'items[0]', 'source.js.embedded.puzzle');
+    assertNoScope(argSlot, 'no rows', 'source.js.embedded.puzzle');
+    // …the same on <Children>: every brace-valued attribute is embedded JS.
+    const argChildren = lineWith(tokens, '<Children user=');
+    assertScope(argChildren, 'Children', 'entity.name.tag.marker.puzzle');
+    assertScope(argChildren, 'Children', 'entity.name.tag.marker.puzzle', 0, 1);
+    assertScope(argChildren, 'user', 'entity.other.attribute-name.html');
+    assertScope(argChildren, 'items[0]', 'source.js.embedded.puzzle');
+    assertScope(argChildren, 'group', 'entity.other.attribute-name.html');
+    assertScope(argChildren, 'items', 'source.js.embedded.puzzle', 0, 1);
+    assertNoScope(argChildren, 'no children', 'source.js.embedded.puzzle');
+    // …and a capitalized name that merely starts with a marker word is a
+    // component.
+    assertScope(lineWith(tokens, '<SnippetHost/>'), 'SnippetHost', 'entity.name.tag.component.puzzle');
+    assertNoScope(lineWith(tokens, '<SnippetHost/>'), 'SnippetHost', 'entity.name.tag.marker.puzzle');
+
+    // Dotted component tags — component families (D167). The whole member
+    // path carries the component scope, in open, close and self-closing form.
+    assertScope(lineWith(tokens, '<Frame.Wrapper class'), 'Frame.Wrapper', 'entity.name.tag.component.puzzle');
+    assertScope(lineWith(tokens, '<Frame.Wrapper class'), 'Frame.Wrapper', 'entity.name.tag.component.puzzle', 12);
+    assertScope(lineWith(tokens, '</Frame.Wrapper>'), 'Frame.Wrapper', 'entity.name.tag.component.puzzle');
+    assertScope(lineWith(tokens, '</Frame.Wrapper>'), 'Frame.Wrapper', 'entity.name.tag.component.puzzle', 12);
+    const dottedPair = lineWith(tokens, '<Frame.Content>');
+    assertScope(dottedPair, 'Frame.Content', 'entity.name.tag.component.puzzle');
+    assertScope(dottedPair, 'Frame.Content', 'entity.name.tag.component.puzzle', 0, 1);
+    assertScope(dottedPair, 'title', 'source.js.embedded.puzzle');
+    // More than one dot is a legal member path too.
+    assertScope(lineWith(tokens, '<Frame.Inner.Deep/>'), 'Frame.Inner.Deep', 'entity.name.tag.component.puzzle');
+    assertScope(lineWith(tokens, '<Frame.Inner.Deep/>'), 'Frame.Inner.Deep', 'entity.name.tag.component.puzzle', 15);
+    // A dotted name rooted at a marker word is a component tag, not a marker:
+    // markers are exact-match, so <Slot.Custom/> falls through (D167).
+    assertScope(lineWith(tokens, '<Slot.Custom/>'), 'Slot.Custom', 'entity.name.tag.component.puzzle');
+    assertNoScope(lineWith(tokens, '<Slot.Custom/>'), 'Slot.Custom', 'entity.name.tag.marker.puzzle');
 
     // Lowercase markers are compile errors (D134).
     assertScope(lineWith(tokens, '<slot name="nope">'), 'slot', 'invalid.illegal.marker.puzzle');
@@ -209,6 +266,46 @@ async function main() {
     // …but a tag that merely starts with a marker name is ordinary HTML.
     assertScope(lineWith(tokens, '<slot-machine'), 'slot-machine', 'entity.name.tag.html');
     assertNoScope(lineWith(tokens, '<slot-machine'), 'slot-machine', 'invalid.illegal.marker.puzzle');
+
+    // The \{ / \} brace escape. In text and in attribute values a backslashed
+    // brace is a literal character, so it must NOT open an interpolation or a
+    // directive — and the live constructs around it stay live.
+    const textEscape = lineWith(tokens, 'literally, then');
+    assertScope(textEscape, '\\{', 'constant.character.escape.puzzle');
+    assertScope(textEscape, '\\}', 'constant.character.escape.puzzle');
+    assertNoScope(textEscape, 'braces', 'source.js.embedded.puzzle');
+    assertNoScope(textEscape, '\\{', 'punctuation.section.embedded.begin.puzzle');
+    assertScope(textEscape, 'title', 'source.js.embedded.puzzle');
+
+    const attrEscape = lineWith(tokens, 'pattern="[0-9]');
+    assertScope(attrEscape, '\\{', 'constant.character.escape.puzzle');
+    assertScope(attrEscape, '\\}', 'constant.character.escape.puzzle');
+    assertScope(attrEscape, '[0-9]', 'string.quoted.double.html');
+    assertNoScope(attrEscape, 'inertInAttr', 'source.js.embedded.puzzle');
+
+    // An escaped brace beats the directive rule too.
+    const escapedDirective = lineWith(tokens, 'notADirective');
+    assertScope(escapedDirective, '\\{', 'constant.character.escape.puzzle');
+    assertNoScope(escapedDirective, 'notADirective', 'keyword.control.conditional.puzzle');
+    assertNoScope(escapedDirective, 'notADirective', 'invalid.illegal.directive.puzzle');
+    assertNoScope(escapedDirective, 'notAnInterpolation', 'source.js.embedded.puzzle');
+
+    // {#for} range forms: `{#for 1...5}` is the sanctioned spelling and
+    // `{#for i in 1...5}` is a 0.7.0 compile error steering to it. Neither may
+    // derail the grammar — the `...` stays the range operator either way.
+    const rangeOnly = lineWith(tokens, 'range only');
+    assertScope(rangeOnly, 'for', 'keyword.control.loop.puzzle');
+    assertScope(rangeOnly, '...', 'keyword.operator.range.puzzle');
+    assertScope(rangeOnly, '1', 'constant.numeric.decimal.js');
+    assertScope(rangeOnly, 'b', 'entity.name.tag.html');
+    assertNoScope(rangeOnly, 'range only', 'source.js.embedded.puzzle');
+
+    const steeredRange = lineWith(tokens, 'steered range');
+    assertScope(steeredRange, 'for', 'keyword.control.loop.puzzle');
+    assertScope(steeredRange, '...', 'keyword.operator.range.puzzle');
+    assertScope(steeredRange, '1', 'constant.numeric.decimal.js');
+    assertScope(steeredRange, 'b', 'entity.name.tag.html');
+    assertNoScope(steeredRange, 'steered range', 'source.js.embedded.puzzle');
 
     // Directive attributes: key, island, ref, flip.
     const directiveAttrs = lineWith(tokens, 'listRoot');
@@ -267,6 +364,14 @@ async function main() {
     assertNoScope(rawEvent, '@', 'keyword.operator.event.puzzle');
     assertScope(rawEvent, 'notAnEvent', 'string.unquoted.html');
     assertNoScope(rawEvent, 'notAnEvent', 'source.js.embedded.puzzle');
+
+    // The brace escape must NOT leak into a raw body: lexRawText does no
+    // backslash handling, so \{ there is a backslash plus a literal brace.
+    const rawBackslash = lineWith(tokens, 'noEscapeHere');
+    assertScope(rawBackslash, '\\{', 'meta.raw.puzzle');
+    assertNoScope(rawBackslash, '\\{', 'constant.character.escape.puzzle');
+    assertNoScope(rawBackslash, '\\}', 'constant.character.escape.puzzle');
+    assertNoScope(rawBackslash, 'noEscapeHere', 'source.js.embedded.puzzle');
 
     // {#raw json}: content after the keyword is legal and ignored, and the
     // closer tolerates whitespace ({/ raw }).

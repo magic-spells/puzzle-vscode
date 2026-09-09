@@ -56,6 +56,29 @@
 
   <Portal><p>{ title }</p></Portal>
 
+  <UserList users={ items }>
+    <Snippet fits="row" user group><b>{ user.name }</b></Snippet>
+  </UserList>
+  <TagList tags={ items }>
+    <Snippet tag><i>{ tag.label }</i></Snippet>
+  </TagList>
+  <Slot name="row" user={ items[0] }>no rows</Slot>
+  <Children user={ items[0] } group={ items }>no children</Children>
+  <SnippetHost/>
+
+  <Frame.Wrapper class="dotted">
+    <Frame.Content>{ title }</Frame.Content>
+    <Frame.Inner.Deep/>
+  </Frame.Wrapper>
+  <Slot.Custom/>
+
+  Use \{ braces \} literally, then { title } is still live.
+  <input pattern="[0-9]\{5\}" data-escaped="\{ inertInAttr \}" />
+  <p>Escaped \{#if notADirective\} and \{ notAnInterpolation \} stay text.</p>
+
+  {#for 1...5}<b>range only</b>{/for}
+  {#for i in 1...5}<b>steered range</b>{/for}
+
   <div ref="listRoot" island key={ items[0] } flip></div>
   <div flip={ offset } key="row-{ offset }" data-island="not-a-directive"></div>
   <button @click:outside={ close() }>Close</button>
@@ -65,6 +88,7 @@
     <b class="bold">structural html</b> and <Slot/> and <Portal>plain tag</Portal>
     <Card ref="literalRef" island key="literalKey" flip>markers are plain here</Card>
     <button @click={ notAnEvent }>inert binding</button>
+    Backslashes are literal too: \{ noEscapeHere \} keeps its backslashes.
   {/raw}
 
   {#raw json}{ "hint": "ignored by the compiler" }{/ raw }

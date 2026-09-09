@@ -145,6 +145,15 @@
     ],
     "description": "Teleport children into the framework portal outlet (paired, attribute-free)"
   },
+  "Snippet": {
+    "prefix": "psnippet",
+    "body": [
+      "<Snippet fits=\"${1:row}\" ${2:item}>",
+      "\t$0",
+      "</Snippet>"
+    ],
+    "description": "Declare a parameterized body a component stamps with data (paired; bare attributes are parameters)"
+  },
   "Inline SVG": {
     "prefix": "psvg",
     "body": ["{#svg '${1:icons/name.svg'}}"],

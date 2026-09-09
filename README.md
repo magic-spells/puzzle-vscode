@@ -66,12 +66,17 @@ export default class AlbumView extends PuzzleView {
 </style>
 ```
 
-The grammar tracks **Puzzle 0.6.0** and recognizes:
+The grammar tracks **Puzzle 0.7.0** and recognizes:
 
 - `{ expression }` and formatter chains (`| formatter(args)`)
 - `{#if}`, `{:else if}`, `{:else}`, `{/if}`
 - `{#unless}` and `{/unless}`
-- `{#for item in items, index}` and `{#for from...to, value}`
+- `{#for item in items, index}` and `{#for from...to, value}` (the two forms
+  don't mix — `{#for i in 1...5}` is a compile error steering to
+  `{#for 1...5, i}`)
+- `\{` and `\}` — the literal-brace escape, in template text and in attribute
+  values (`pattern="[0-9]\{5\}"`). It is deliberately inert inside `{#raw}`,
+  where no backslash handling happens at all.
 - `{#case}`, `{:when}`, `{:else}`, and `{/case}`
 - `{#svg 'path/to/icon.svg'}` (void — it takes no closer)
 - `{#comment}` blocks and `{## inline notes }`
@@ -82,9 +87,15 @@ The grammar tracks **Puzzle 0.6.0** and recognizes:
 - `@event={ expression }` and colon modifiers such as
   `@keydown:enter:prevent={ submit(event) }`, including `@click:outside`
 - The directive attributes `key`, `island`, `ref`, and `flip`
-- The composition markers `<Children>`, `<Slot>`, and `<Portal>`, distinct from
-  ordinary capitalized component tags
-- Capitalized component tags and ordinary HTML tags
+- The composition markers `<Children>`, `<Slot>`, `<Portal>` and `<Snippet>`,
+  distinct from ordinary capitalized component tags. `<Snippet>` (D166) is
+  0.7.0's fourth marker: `fits` is its only valued attribute and every other
+  attribute is a bare parameter declaration (`<Snippet fits="row" user group>`)
+- Marker arguments (D166): a brace-valued attribute on `<Children>` or `<Slot>`
+  other than `name` is a per-stamp argument, and highlights as embedded
+  JavaScript — `<Slot name="row" user={ user }>fallback</Slot>`
+- Capitalized component tags and ordinary HTML tags, including dotted
+  component-family member paths such as `<Frame.Wrapper>` (D167)
 
 Legacy `{#each}`, `{:elsif}`, dotted event modifiers such as `@click.prevent`,
 and lowercase markers such as `<slot>` or `<children>` are intentionally marked
