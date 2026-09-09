@@ -118,6 +118,42 @@
     ],
     "description": "Create a case/when block"
   },
+  "Raw Block": {
+    "prefix": "praw",
+    "body": [
+      "{#raw}",
+      "\t${1:literal template text — braces are inert}",
+      "{/raw}"
+    ],
+    "description": "Emit a static block verbatim: no interpolation, directives, formatters, or event bindings"
+  },
+  "Labeled Raw Block": {
+    "prefix": "prawlabel",
+    "body": [
+      "{#raw ${1:json}}",
+      "\t${2:literal template text — braces are inert}",
+      "{/raw}"
+    ],
+    "description": "Raw block with an ignored label after the keyword"
+  },
+  "Portal": {
+    "prefix": "pportal",
+    "body": [
+      "<Portal>",
+      "\t$0",
+      "</Portal>"
+    ],
+    "description": "Teleport children into the framework portal outlet (paired, attribute-free)"
+  },
+  "Snippet": {
+    "prefix": "psnippet",
+    "body": [
+      "<Snippet fits=\"${1:row}\" ${2:item}>",
+      "\t$0",
+      "</Snippet>"
+    ],
+    "description": "Declare a parameterized body a component stamps with data (paired; bare attributes are parameters)"
+  },
   "Inline SVG": {
     "prefix": "psvg",
     "body": ["{#svg '${1:icons/name.svg'}}"],
