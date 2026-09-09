@@ -14,6 +14,7 @@
   "injections": {
     "L:source.css.embedded.puzzle-template": {
       "patterns": [
+        { "include": "#brace-escape" },
         { "include": "#invalid-raw-in-attribute" },
         { "include": "#puzzle-directives" },
         { "include": "#puzzle-interpolation" }
@@ -21,6 +22,11 @@
     }
   },
   "repository": {
+    "brace-escape": {
+      "match": "\\\\[{}]",
+      "name": "constant.character.escape.puzzle"
+    },
+
     "html-comment": {
       "patterns": [
         { "include": "text.html.basic#comment" }
@@ -39,7 +45,7 @@
       "name": "comment.block.template.puzzle",
       "contentName": "comment.block.template.puzzle",
       "patterns": [
-        { "match": "\\\\[{}]", "name": "constant.character.escape.puzzle" },
+        { "include": "#brace-escape" },
         { "include": "#puzzle-comment-brace-balance" }
       ]
     },
@@ -48,7 +54,7 @@
       "begin": "\\{",
       "end": "\\}",
       "patterns": [
-        { "match": "\\\\[{}]", "name": "constant.character.escape.puzzle" },
+        { "include": "#brace-escape" },
         { "include": "#puzzle-comment-brace-balance" }
       ]
     },
@@ -126,6 +132,7 @@
 
     "template-content": {
       "patterns": [
+        { "include": "#brace-escape" },
         { "include": "#html-comment" },
         { "include": "#puzzle-comment-inline" },
         { "include": "#puzzle-comment-block" },
@@ -273,6 +280,7 @@
       },
       "contentName": "meta.attribute.style.html source.css.embedded.puzzle-template",
       "patterns": [
+        { "include": "#brace-escape" },
         { "include": "#invalid-raw-in-attribute" },
         { "include": "#puzzle-directives" },
         { "include": "#puzzle-interpolation" },
@@ -293,6 +301,7 @@
       },
       "contentName": "meta.attribute.style.html source.css.embedded.puzzle-template",
       "patterns": [
+        { "include": "#brace-escape" },
         { "include": "#invalid-raw-in-attribute" },
         { "include": "#puzzle-directives" },
         { "include": "#puzzle-interpolation" },
@@ -496,6 +505,7 @@
       },
       "contentName": "string.quoted.double.html",
       "patterns": [
+        { "include": "#brace-escape" },
         { "include": "#invalid-raw-in-attribute" },
         { "include": "#puzzle-interpolation" },
         { "include": "text.html.basic#entities" }
@@ -515,6 +525,7 @@
       },
       "contentName": "string.quoted.single.html",
       "patterns": [
+        { "include": "#brace-escape" },
         { "include": "#invalid-raw-in-attribute" },
         { "include": "#puzzle-interpolation" },
         { "include": "text.html.basic#entities" }
@@ -558,6 +569,7 @@
       },
       "contentName": "string.quoted.double.html",
       "patterns": [
+        { "include": "#brace-escape" },
         { "include": "#invalid-raw-in-attribute" },
         { "include": "#puzzle-directives" },
         { "include": "#puzzle-interpolation" },
@@ -578,6 +590,7 @@
       },
       "contentName": "string.quoted.single.html",
       "patterns": [
+        { "include": "#brace-escape" },
         { "include": "#invalid-raw-in-attribute" },
         { "include": "#puzzle-directives" },
         { "include": "#puzzle-interpolation" },
