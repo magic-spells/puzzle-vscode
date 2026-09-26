@@ -421,13 +421,135 @@ const stillJavaScript = true;
     assertScope(lineWith(edgeCases, '{:elsif'), 'elsif', 'invalid.illegal.directive.puzzle');
     assertScope(lineWith(edgeCases, 'count || fallback'), '||', 'keyword.operator.logical.js');
     assertNoScope(lineWith(edgeCases, 'count || fallback'), '||', 'keyword.operator.formatter.puzzle');
-    assertScope(lineWith(edgeCases, 'flags | mask'), '|', 'keyword.operator.bitwise.js');
-    assertNoScope(lineWith(edgeCases, 'flags | mask'), '|', 'keyword.operator.formatter.puzzle');
+    // Since 0.8.0 (D173 V1) a top-level `|` in an {#if} header is a formatter
+    // pipe, not a bitwise OR.
+    assertScope(lineWith(edgeCases, 'flags | mask'), '|', 'keyword.operator.formatter.puzzle');
+    assertScope(lineWith(edgeCases, 'flags | mask'), 'mask', 'variable.function.formatter.puzzle');
     assertScope(lineWith(edgeCases, 'stillJavaScript'), 'stillJavaScript', 'source.js.embedded.puzzle');
     // Closers tolerate whitespace.
     assertScope(lineWith(edgeCases, '{/ unless }'), 'unless', 'keyword.control.end.puzzle', 0, 1);
     // A keyword that merely starts with `raw` is not the raw block.
     assertScope(lineWith(edgeCases, '{#rawish}'), 'rawish', 'invalid.illegal.directive.puzzle');
+
+    // 0.8.0 (D173 V1): a formatter chain is legal in every value position —
+    // brace-only attributes, component props and marker arguments, and the
+    // {#if}/{:else if}/{#unless}/{#case} headers, inline attribute ifs included.
+    // `@event` handler bodies are JavaScript, so a pipe there stays bitwise.
+    const valuePipes = tokenize(grammar, `<puzzle-view>
+  <a title={ price | currency } data-or={ a || b }>link</a>
+  <Card total={ n | currency('$', 0) } />
+  <Frame.Wrapper label={ name | truncate(20) } />
+  <Children user={ user | upcase }>{ user.name }</Children>
+  <input key={ id | downcase } value={ name | upcase } />
+  {#if post.tags | size}tagged{:else if draft | blank-ish}draft{/if}
+  {#unless items | size}empty{/unless}
+  {#case status | downcase}{:when 'paid', 'shipped'}ok{/case}
+  <b class="btn {#if tags | size}has-tags{/if}">b</b>
+  <button @click={ a | b } @keyup={ save({ id: todo.id }) }>go</button>
+  { 'greeting' | t({ name: user.name }) } afterText
+  { photo | resize({ height: 480 }) } tailText
+  { fn({ a: 1 }) } plainTail
+  { (flags | mask) } { count || fallback }
+  { w / 2 | 0 } { a |= 2 }
+  {#for item in items | sort}{/for}
+  {#case kind}{:when 'a' | x}bad{/case}
+  { total |
+    currency }
+  <pre>
+    keep   { spaced | trim }   exactly
+  </pre>
+  <textarea>
+  { draft }
+  </textarea>
+</puzzle-view>`);
+
+    const attrPipe = lineWith(valuePipes, 'title={ price');
+    assertScope(attrPipe, '|', 'keyword.operator.formatter.puzzle');
+    assertScope(attrPipe, 'currency', 'variable.function.formatter.puzzle');
+    assertScope(attrPipe, '||', 'keyword.operator.logical.js');
+    assertNoScope(attrPipe, '||', 'keyword.operator.formatter.puzzle');
+    assertNoScope(attrPipe, '||', 'invalid.illegal.formatter-pipe.puzzle');
+
+    const propPipe = lineWith(valuePipes, '<Card total');
+    assertScope(propPipe, '|', 'keyword.operator.formatter.puzzle');
+    assertScope(propPipe, 'currency', 'variable.function.formatter.puzzle');
+    assertScope(propPipe, "'$'", 'string.quoted.single.js');
+    assertScope(lineWith(valuePipes, '<Frame.Wrapper'), 'truncate', 'variable.function.formatter.puzzle');
+    const markerArgPipe = lineWith(valuePipes, '<Children user');
+    assertScope(markerArgPipe, 'Children', 'entity.name.tag.marker.puzzle');
+    assertScope(markerArgPipe, 'upcase', 'variable.function.formatter.puzzle');
+    const directivePipe = lineWith(valuePipes, '<input key');
+    assertScope(directivePipe, 'key', 'keyword.control.directive.puzzle');
+    assertScope(directivePipe, 'downcase', 'variable.function.formatter.puzzle');
+    assertScope(directivePipe, 'upcase', 'variable.function.formatter.puzzle');
+
+    const ifPipe = lineWith(valuePipes, '{#if post.tags');
+    assertScope(ifPipe, '|', 'keyword.operator.formatter.puzzle');
+    assertScope(ifPipe, 'size', 'variable.function.formatter.puzzle');
+    // Formatter names may carry a dash after the first character.
+    assertScope(ifPipe, 'blank-ish', 'variable.function.formatter.puzzle');
+    assertScope(ifPipe, 'else', 'keyword.control.conditional.else.puzzle');
+    assertScope(lineWith(valuePipes, '{#unless items'), 'size', 'variable.function.formatter.puzzle');
+    assertScope(lineWith(valuePipes, '{#case status'), 'downcase', 'variable.function.formatter.puzzle');
+    assertNoScope(lineWith(valuePipes, '{#case status'), 'shipped', 'invalid.illegal.formatter-pipe.puzzle');
+
+    const inlineIfPipe = lineWith(valuePipes, 'has-tags');
+    assertScope(inlineIfPipe, 'size', 'variable.function.formatter.puzzle');
+    assertScope(inlineIfPipe, 'size', 'string.quoted.double.html');
+    assertNoScope(inlineIfPipe, 'has-tags', 'source.js.embedded.puzzle');
+
+    const handlerPipe = lineWith(valuePipes, '@click={ a | b }');
+    assertScope(handlerPipe, '|', 'keyword.operator.bitwise.js');
+    assertNoScope(handlerPipe, '|', 'keyword.operator.formatter.puzzle');
+    assertNoScope(handlerPipe, '|', 'invalid.illegal.formatter-pipe.puzzle');
+
+    // 0.8.0 (D173 V8): an object literal is legal in argument position. It is
+    // a JavaScript object, not a nested interpolation, and the outer
+    // interpolation still closes at the right brace.
+    for (const needle of ['afterText', 'tailText', 'plainTail']) {
+        const line = lineWith(valuePipes, needle);
+        assertScope(line, '{', 'meta.objectliteral.js', 0, 1);
+        assertNoScope(line, needle, 'source.js.embedded.puzzle');
+    }
+    const tArgs = lineWith(valuePipes, 'afterText');
+    assertScope(tArgs, 't(', 'variable.function.formatter.puzzle');
+    assertScope(tArgs, 'name:', 'meta.object-literal.key.js');
+    assertScope(tArgs, 'user.name', 'meta.objectliteral.js');
+    assertScope(lineWith(valuePipes, 'tailText'), 'resize', 'variable.function.formatter.puzzle');
+    const handlerObject = lineWith(valuePipes, 'save({');
+    assertScope(handlerObject, 'id:', 'meta.object-literal.key.js');
+    assertScope(handlerObject, 'go', 'text.html.puzzle');
+    assertNoScope(handlerObject, 'go', 'source.js.embedded.puzzle');
+
+    // Only a top-level single `|` is a pipe: parenthesized it is bitwise OR.
+    const nested = lineWith(valuePipes, '(flags | mask)');
+    assertScope(nested, '|', 'keyword.operator.bitwise.js');
+    assertNoScope(nested, '|', 'invalid.illegal.formatter-pipe.puzzle');
+    assertScope(nested, '||', 'keyword.operator.logical.js');
+
+    // What follows a pipe must be a formatter name: `| 0` and `|=` are
+    // compile errors, and so is any pipe in a {#for} header or a {:when} value.
+    const notAName = lineWith(valuePipes, 'w / 2 | 0');
+    assertScope(notAName, '|', 'invalid.illegal.formatter-pipe.puzzle');
+    assertScope(notAName, '|', 'invalid.illegal.formatter-pipe.puzzle', 0, 1);
+    const forPipe = lineWith(valuePipes, '{#for item in items | sort}');
+    assertScope(forPipe, '|', 'invalid.illegal.formatter-pipe.puzzle');
+    assertNoScope(forPipe, 'sort', 'variable.function.formatter.puzzle');
+    const whenPipe = lineWith(valuePipes, "{:when 'a' | x}");
+    assertScope(whenPipe, '|', 'invalid.illegal.formatter-pipe.puzzle');
+    assertNoScope(whenPipe, 'x}', 'variable.function.formatter.puzzle');
+
+    // A chain may continue on the next line.
+    const eolPipe = lineWith(valuePipes, '{ total |');
+    assertScope(eolPipe, '|', 'keyword.operator.formatter.puzzle');
+    assertNoScope(eolPipe, '|', 'invalid.illegal.formatter-pipe.puzzle');
+
+    // <pre>/<textarea> bodies keep their whitespace (D173 V10); the grammar
+    // does not collapse or special-case them, and interpolations stay live.
+    const preBody = lineWith(valuePipes, 'keep   {');
+    assertScope(preBody, 'trim', 'variable.function.formatter.puzzle');
+    assertNoScope(preBody, 'exactly', 'source.js.embedded.puzzle');
+    assertScope(lineWith(valuePipes, '{ draft }'), 'draft', 'source.js.embedded.puzzle');
 
     console.log('Puzzle TextMate grammar tests passed');
 }
