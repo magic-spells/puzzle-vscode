@@ -457,6 +457,8 @@
       },
       "contentName": "source.js.embedded.puzzle",
       "patterns": [
+        { "include": "#formatter" },
+        { "include": "#invalid-pipe" },
         { "include": "#javascript-expression" }
       ]
     },
@@ -552,6 +554,8 @@
       },
       "contentName": "source.js.embedded.puzzle",
       "patterns": [
+        { "include": "#formatter" },
+        { "include": "#invalid-pipe" },
         { "include": "#javascript-expression" }
       ]
     },
@@ -625,6 +629,8 @@
       },
       "contentName": "source.js.embedded.puzzle",
       "patterns": [
+        { "include": "#formatter" },
+        { "include": "#invalid-pipe" },
         { "include": "#javascript-expression" }
       ]
     },
@@ -644,6 +650,7 @@
       "patterns": [
         { "include": "#range-number-left" },
         { "include": "#range-operator" },
+        { "include": "#invalid-pipe" },
         { "include": "#javascript-expression" }
       ]
     },
@@ -793,6 +800,8 @@
       },
       "contentName": "source.js.embedded.puzzle",
       "patterns": [
+        { "include": "#formatter" },
+        { "include": "#invalid-pipe" },
         { "include": "#javascript-expression" }
       ]
     },
@@ -810,6 +819,7 @@
       },
       "contentName": "source.js.embedded.puzzle",
       "patterns": [
+        { "include": "#invalid-pipe" },
         { "include": "#javascript-expression" }
       ]
     },
@@ -856,16 +866,32 @@
       "contentName": "meta.interpolation.puzzle source.js.embedded.puzzle",
       "patterns": [
         { "include": "#formatter" },
+        { "include": "#invalid-pipe" },
         { "include": "#javascript-expression" }
       ]
     },
 
     "formatter": {
-      "match": "(?<!\\|)(\\|)(?![|=])\\s*([_$A-Za-z][_$A-Za-z0-9-]*)(?=\\s*(?:\\(|\\||\\}))",
-      "captures": {
-        "1": { "name": "keyword.operator.formatter.puzzle" },
-        "2": { "name": "variable.function.formatter.puzzle" }
-      }
+      "comment": "A formatter pipe in any value position (D173 V1): `| name` or `| name(args)`, name = [A-Za-z_$][A-Za-z0-9_$-]*. `||` is logical OR. A pipe that ends a line is a chain continued on the next line.",
+      "patterns": [
+        {
+          "match": "(?<!\\|)(\\|)(?![|=])\\s*([_$A-Za-z][_$A-Za-z0-9-]*)(?=\\s*(?:\\(|\\||\\}|$))",
+          "captures": {
+            "1": { "name": "keyword.operator.formatter.puzzle" },
+            "2": { "name": "variable.function.formatter.puzzle" }
+          }
+        },
+        {
+          "match": "(?<!\\|)\\|(?![|=])(?=\\s*$)",
+          "name": "keyword.operator.formatter.puzzle"
+        }
+      ]
+    },
+
+    "invalid-pipe": {
+      "comment": "A top-level single | in a value position must be followed by a formatter name (D173 V1); anything else — `| 0`, `|= 2`, a pipe in a {#for} header or a {:when} value — is a compile error. `||` stays logical OR, and a | nested in (), [] or {} is left to the JavaScript grammar.",
+      "match": "(?<!\\|)\\|(?!\\|)",
+      "name": "invalid.illegal.formatter-pipe.puzzle"
     },
 
     "range-number-left": {

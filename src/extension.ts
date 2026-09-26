@@ -1,21 +1,54 @@
 import * as vscode from 'vscode';
 
+// The Puzzle 0.8.0 standard formatter set (D174) plus the browser-only
+// built-ins and the i18n `t` (D175). Completion hints only: a formatter
+// name is never a grammar keyword, and apps register their own.
 const FORMATTERS = [
-    'trim',
-    'capitalize',
-    'downcase',
-    'upcase',
-    'truncate',
-    'replace',
-    'pluralize',
+    // numbers
+    'abs',
+    'ceil',
+    'floor',
+    'plus',
+    'minus',
+    'times',
+    'divided_by',
+    'modulo',
+    'round',
     'currency',
     'percentage',
-    'round',
+    'number_with_delimiter',
+    'compact_number',
+    // text
+    'downcase',
+    'upcase',
+    'capitalize',
+    'trim',
+    'strip',
+    'truncate',
+    'replace',
+    'split',
+    'strip_html',
+    'strip_newlines',
+    'pluralize',
+    // markup
+    'escape',
+    'raw',
+    'newline_to_br',
+    // values
+    'default',
+    'size',
     'join',
+    'json',
+    // dates
     'date',
     'time',
     'datetime',
-    'timeago'
+    // browser-only built-ins
+    'link',
+    'timeago',
+    'in_timezone',
+    // translations: registered by the i18n service (D175)
+    't'
 ];
 
 const EVENTS = [
@@ -150,7 +183,8 @@ function provideCompletionItems(
         return EVENTS.map(event => snippet(event, `${event}={ \${1:handler} }`, `Bind the ${event} event`));
     }
 
-    if (/\|\s*$/.test(prefix)) {
+    // A single `|` opens a formatter; `||` is logical OR.
+    if (/(?:^|[^|])\|\s*$/.test(prefix)) {
         return FORMATTERS.map(formatter => completion(formatter, vscode.CompletionItemKind.Function, 'Puzzle formatter'));
     }
 

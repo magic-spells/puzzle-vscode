@@ -66,9 +66,18 @@ export default class AlbumView extends PuzzleView {
 </style>
 ```
 
-The grammar tracks **Puzzle 0.7.0** and recognizes:
+The grammar tracks the **Puzzle 0.8.0** template grammar and recognizes:
 
-- `{ expression }` and formatter chains (`| formatter(args)`)
+- `{ expression }` and formatter chains (`| formatter(args)`) in every value
+  position (0.8.0): text, quoted and brace-only attribute values
+  (`title={ price | currency }`), component props and marker arguments, and the
+  `{#if}`, `{:else if}`, `{#unless}` and `{#case}` headers, inline attribute
+  `{#if}`s included. Only a top-level single `|` is a pipe — `||` stays logical
+  OR, a parenthesized `(a | b)` stays bitwise, and `@event` handler bodies are
+  plain JavaScript. A pipe not followed by a formatter name (`| 0`, `|=`), or
+  any pipe in a `{#for}` header or a `{:when}` value, is marked invalid
+- Object literals as call and formatter arguments (0.8.0) —
+  `{ 'greeting' | t({ name: user.name }) }`, `@click={ save({ id: todo.id }) }`
 - `{#if}`, `{:else if}`, `{:else}`, `{/if}`
 - `{#unless}` and `{/unless}`
 - `{#for item in items, index}` and `{#for from...to, value}` (the two forms
@@ -128,6 +137,7 @@ standard installation location.
 | Event/action name | `support.function.event.puzzle` |
 | Event modifier | `storage.modifier.event.puzzle` |
 | Formatter | `variable.function.formatter.puzzle` |
+| Formatter pipe | `keyword.operator.formatter.puzzle` |
 | Range operator | `keyword.operator.range.puzzle` |
 | Invalid legacy syntax | `invalid.illegal.*.puzzle` |
 
