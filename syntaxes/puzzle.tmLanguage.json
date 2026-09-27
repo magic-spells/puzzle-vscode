@@ -629,7 +629,6 @@
       },
       "contentName": "source.js.embedded.puzzle",
       "patterns": [
-        { "include": "#formatter" },
         { "include": "#invalid-pipe" },
         { "include": "#javascript-expression" }
       ]
@@ -800,7 +799,6 @@
       },
       "contentName": "source.js.embedded.puzzle",
       "patterns": [
-        { "include": "#formatter" },
         { "include": "#invalid-pipe" },
         { "include": "#javascript-expression" }
       ]
@@ -872,7 +870,7 @@
     },
 
     "formatter": {
-      "comment": "A formatter pipe in any value position (D173 V1): `| name` or `| name(args)`, name = [A-Za-z_$][A-Za-z0-9_$-]*. `||` is logical OR. A pipe that ends a line is a chain continued on the next line.",
+      "comment": "A formatter pipe in a value position (D173 V1): `| name` or `| name(args)`, name = [A-Za-z_$][A-Za-z0-9_$-]*. `||` is logical OR. A pipe that ends a line is a chain continued on the next line. Condition headers ({#if}, {:else if}, {#unless}, {#case}, inline attribute {#if}) do not include this rule: they take no formatter chain.",
       "patterns": [
         {
           "match": "(?<!\\|)(\\|)(?![|=])\\s*([_$A-Za-z][_$A-Za-z0-9-]*)(?=\\s*(?:\\(|\\||\\}|$))",
@@ -889,7 +887,7 @@
     },
 
     "invalid-pipe": {
-      "comment": "A top-level single | in a value position must be followed by a formatter name (D173 V1); anything else — `| 0`, `|= 2`, a pipe in a {#for} header or a {:when} value — is a compile error. `||` stays logical OR, and a | nested in (), [] or {} is left to the JavaScript grammar.",
+      "comment": "A top-level single | in a value position must be followed by a formatter name (D173 V1); anything else — `| 0`, `|= 2`, or any pipe in a {#for} header, a {:when} value, or an {#if}/{:else if}/{#unless}/{#case} condition (inline attribute {#if}s included) — is a compile error. `||` stays logical OR, and a | nested in (), [] or {} is left to the JavaScript grammar.",
       "match": "(?<!\\|)\\|(?!\\|)",
       "name": "invalid.illegal.formatter-pipe.puzzle"
     },

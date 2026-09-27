@@ -421,10 +421,12 @@ const stillJavaScript = true;
     assertScope(lineWith(edgeCases, '{:elsif'), 'elsif', 'invalid.illegal.directive.puzzle');
     assertScope(lineWith(edgeCases, 'count || fallback'), '||', 'keyword.operator.logical.js');
     assertNoScope(lineWith(edgeCases, 'count || fallback'), '||', 'keyword.operator.formatter.puzzle');
-    // Since 0.8.0 (D173 V1) a top-level `|` in an {#if} header is a formatter
-    // pipe, not a bitwise OR.
-    assertScope(lineWith(edgeCases, 'flags | mask'), '|', 'keyword.operator.formatter.puzzle');
-    assertScope(lineWith(edgeCases, 'flags | mask'), 'mask', 'variable.function.formatter.puzzle');
+    // 0.8.0 (D173 V1): condition headers take no formatter chain, so a
+    // top-level `|` in an {#if} header is a compile error — neither a pipe
+    // nor a bitwise OR.
+    assertScope(lineWith(edgeCases, 'flags | mask'), '|', 'invalid.illegal.formatter-pipe.puzzle');
+    assertNoScope(lineWith(edgeCases, 'flags | mask'), '|', 'keyword.operator.formatter.puzzle');
+    assertNoScope(lineWith(edgeCases, 'flags | mask'), 'mask', 'variable.function.formatter.puzzle');
     assertScope(lineWith(edgeCases, 'stillJavaScript'), 'stillJavaScript', 'source.js.embedded.puzzle');
     // Closers tolerate whitespace.
     assertScope(lineWith(edgeCases, '{/ unless }'), 'unless', 'keyword.control.end.puzzle', 0, 1);
@@ -432,8 +434,10 @@ const stillJavaScript = true;
     assertScope(lineWith(edgeCases, '{#rawish}'), 'rawish', 'invalid.illegal.directive.puzzle');
 
     // 0.8.0 (D173 V1): a formatter chain is legal in every value position —
-    // brace-only attributes, component props and marker arguments, and the
-    // {#if}/{:else if}/{#unless}/{#case} headers, inline attribute ifs included.
+    // text, brace-only attributes, component props and marker arguments. The
+    // {#if}/{:else if}/{#unless}/{#case} condition headers, inline attribute
+    // ifs included, take no formatter chain: a top-level `|` there is a compile
+    // error, exactly like a pipe in a {#for} header or a {:when} value.
     // `@event` handler bodies are JavaScript, so a pipe there stays bitwise.
     const valuePipes = tokenize(grammar, `<puzzle-view>
   <a title={ price | currency } data-or={ a || b }>link</a>
@@ -445,6 +449,13 @@ const stillJavaScript = true;
   {#unless items | size}empty{/unless}
   {#case status | downcase}{:when 'paid', 'shipped'}ok{/case}
   <b class="btn {#if tags | size}has-tags{/if}">b</b>
+  {#if a || b}either{:else if c || d}other{/if}
+  {#unless x || y}neither{/unless}
+  {#case a || b}{:when 1}one{/case}
+  <i class="{#if a || b}on{/if}">i</i>
+  {#if (bits | flag)}masked{:else if [a | b][0]}indexed{/if}
+  {#if ready |
+    size}wrapped{/if}
   <button @click={ a | b } @keyup={ save({ id: todo.id }) }>go</button>
   { 'greeting' | t({ name: user.name }) } afterText
   { photo | resize({ height: 480 }) } tailText
@@ -483,20 +494,57 @@ const stillJavaScript = true;
     assertScope(directivePipe, 'downcase', 'variable.function.formatter.puzzle');
     assertScope(directivePipe, 'upcase', 'variable.function.formatter.puzzle');
 
+    // Condition headers: the `|` is illegal and what follows is not a
+    // formatter name — the {#if}, {:else if}, {#unless} and {#case} forms.
     const ifPipe = lineWith(valuePipes, '{#if post.tags');
-    assertScope(ifPipe, '|', 'keyword.operator.formatter.puzzle');
-    assertScope(ifPipe, 'size', 'variable.function.formatter.puzzle');
-    // Formatter names may carry a dash after the first character.
-    assertScope(ifPipe, 'blank-ish', 'variable.function.formatter.puzzle');
+    assertScope(ifPipe, '|', 'invalid.illegal.formatter-pipe.puzzle');
+    assertNoScope(ifPipe, '|', 'keyword.operator.formatter.puzzle');
+    assertNoScope(ifPipe, 'size', 'variable.function.formatter.puzzle');
     assertScope(ifPipe, 'else', 'keyword.control.conditional.else.puzzle');
-    assertScope(lineWith(valuePipes, '{#unless items'), 'size', 'variable.function.formatter.puzzle');
-    assertScope(lineWith(valuePipes, '{#case status'), 'downcase', 'variable.function.formatter.puzzle');
-    assertNoScope(lineWith(valuePipes, '{#case status'), 'shipped', 'invalid.illegal.formatter-pipe.puzzle');
+    assertScope(ifPipe, '|', 'invalid.illegal.formatter-pipe.puzzle', 0, 1);
+    assertNoScope(ifPipe, 'blank-ish', 'variable.function.formatter.puzzle');
+    // The header still closes at its brace: the branch body is template text.
+    assertNoScope(ifPipe, '}draft{', 'source.js.embedded.puzzle', 1);
+    const unlessPipe = lineWith(valuePipes, '{#unless items');
+    assertScope(unlessPipe, '|', 'invalid.illegal.formatter-pipe.puzzle');
+    assertNoScope(unlessPipe, 'size', 'variable.function.formatter.puzzle');
+    const casePipe = lineWith(valuePipes, '{#case status');
+    assertScope(casePipe, '|', 'invalid.illegal.formatter-pipe.puzzle');
+    assertNoScope(casePipe, 'downcase', 'variable.function.formatter.puzzle');
+    assertNoScope(casePipe, 'shipped', 'invalid.illegal.formatter-pipe.puzzle');
 
+    // …and the inline {#if} inside a quoted attribute value.
     const inlineIfPipe = lineWith(valuePipes, 'has-tags');
-    assertScope(inlineIfPipe, 'size', 'variable.function.formatter.puzzle');
+    assertScope(inlineIfPipe, '|', 'invalid.illegal.formatter-pipe.puzzle');
+    assertNoScope(inlineIfPipe, 'size', 'variable.function.formatter.puzzle');
     assertScope(inlineIfPipe, 'size', 'string.quoted.double.html');
     assertNoScope(inlineIfPipe, 'has-tags', 'source.js.embedded.puzzle');
+
+    // `||` in a condition header is logical OR: never a pipe, never illegal.
+    for (const [needle, occurrences] of [
+        ['{#if a || b}either', 2],
+        ['{#unless x || y}', 1],
+        ['{#case a || b}', 1],
+        ['<i class="{#if a || b}', 1]
+    ]) {
+        const line = lineWith(valuePipes, needle);
+        for (let i = 0; i < occurrences; i += 1) {
+            assertScope(line, '||', 'keyword.operator.logical.js', 0, i);
+            assertNoScope(line, '||', 'keyword.operator.formatter.puzzle', 0, i);
+            assertNoScope(line, '||', 'invalid.illegal.formatter-pipe.puzzle', 0, i);
+        }
+    }
+    // A `|` nested in parentheses or brackets in a header is plain JavaScript.
+    const nestedHeader = lineWith(valuePipes, '{#if (bits | flag)}');
+    assertScope(nestedHeader, '|', 'keyword.operator.bitwise.js');
+    assertNoScope(nestedHeader, '|', 'invalid.illegal.formatter-pipe.puzzle');
+    assertScope(nestedHeader, '|', 'keyword.operator.bitwise.js', 0, 1);
+    assertNoScope(nestedHeader, '|', 'invalid.illegal.formatter-pipe.puzzle', 0, 1);
+    // A pipe that ends a condition-header line is not a continued chain.
+    const eolHeaderPipe = lineWith(valuePipes, '{#if ready |');
+    assertScope(eolHeaderPipe, '|', 'invalid.illegal.formatter-pipe.puzzle');
+    assertNoScope(eolHeaderPipe, '|', 'keyword.operator.formatter.puzzle');
+    assertNoScope(lineWith(valuePipes, 'size}wrapped'), 'size', 'variable.function.formatter.puzzle');
 
     const handlerPipe = lineWith(valuePipes, '@click={ a | b }');
     assertScope(handlerPipe, '|', 'keyword.operator.bitwise.js');
@@ -528,7 +576,8 @@ const stillJavaScript = true;
     assertScope(nested, '||', 'keyword.operator.logical.js');
 
     // What follows a pipe must be a formatter name: `| 0` and `|=` are
-    // compile errors, and so is any pipe in a {#for} header or a {:when} value.
+    // compile errors, and so is any pipe in a {#for} header or a {:when} value
+    // (and, above, in any condition header).
     const notAName = lineWith(valuePipes, 'w / 2 | 0');
     assertScope(notAName, '|', 'invalid.illegal.formatter-pipe.puzzle');
     assertScope(notAName, '|', 'invalid.illegal.formatter-pipe.puzzle', 0, 1);
