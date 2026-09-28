@@ -630,6 +630,8 @@ const stillJavaScript = true;
   <Card body={ html | raw } style="color:{ tone | raw }" key={ id | newline_to_br } />
   <Slot name="row" item={ html | raw }>fallback { html | raw }</Slot>
   <p>{ draft || raw } { rawish | raw_text } { a | rawValue }</p>
+  <p>{ html | raw() } { note | newline_to_br( ) } emptyParens</p>
+  <p title={ html | raw() }>{ html | raw() | upcase } { note | newline_to_br('x') }</p>
 </puzzle-view>`);
 
     const sizeLine = lineWith(dataLanguage, '{#if todos.size');
@@ -699,6 +701,20 @@ const stillJavaScript = true;
     assertNoScope(rawLookalikes, 'raw', 'invalid.illegal.markup-formatter.puzzle');
     assertScope(rawLookalikes, 'raw_text', 'variable.function.formatter.puzzle');
     assertScope(rawLookalikes, 'rawValue', 'variable.function.formatter.puzzle');
+
+    // Empty parentheses are no arguments: `raw()` and `newline_to_br( )` as
+    // the last formatter of a text interpolation compile.
+    const emptyParens = lineWith(dataLanguage, 'emptyParens');
+    assertScope(emptyParens, 'raw', 'variable.function.formatter.puzzle');
+    assertNoScope(emptyParens, 'raw', 'invalid.illegal.markup-formatter.puzzle');
+    assertScope(emptyParens, 'newline_to_br', 'variable.function.formatter.puzzle');
+    assertNoScope(emptyParens, 'newline_to_br', 'invalid.illegal.markup-formatter.puzzle');
+    // …but not in an attribute, not followed by another formatter, and not
+    // with a real argument.
+    const emptyParensBad = lineWith(dataLanguage, '<p title={ html | raw() }>');
+    assertScope(emptyParensBad, 'raw', 'invalid.illegal.markup-formatter.puzzle');
+    assertScope(emptyParensBad, 'raw', 'invalid.illegal.markup-formatter.puzzle', 0, 1);
+    assertScope(emptyParensBad, 'newline_to_br', 'invalid.illegal.markup-formatter.puzzle');
 
     console.log('Puzzle TextMate grammar tests passed');
 }

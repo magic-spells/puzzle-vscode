@@ -895,8 +895,8 @@
     },
 
     "markup-formatter-misplaced": {
-      "comment": "The markup formatters `raw` and `newline_to_br` (D174) must be the last formatter of a text interpolation and take no arguments. One followed by another pipe or by an argument list is a compile error.",
-      "match": "(?<!\\|)(\\|)(?![|=])\\s*(raw|newline_to_br)(?=\\s*(?:\\(|\\|(?!\\|)))",
+      "comment": "The markup formatters `raw` and `newline_to_br` (D174) must be the last formatter of a text interpolation and take no arguments. One followed by another pipe or by a non-empty argument list is a compile error; empty parentheses (`raw()`) are allowed.",
+      "match": "(?<!\\|)(\\|)(?![|=])\\s*(raw|newline_to_br)(?=\\s*(?:\\((?!\\s*\\))|(?:\\(\\s*\\)\\s*)?\\|(?!\\|)))",
       "captures": {
         "1": { "name": "keyword.operator.formatter.puzzle" },
         "2": { "name": "invalid.illegal.markup-formatter.puzzle" }
