@@ -167,7 +167,7 @@
   "Formatter Chain": {
     "prefix": "pfilter",
     "body": ["{ ${1:value} | ${2:trim} | ${3:capitalize} }"],
-    "description": "Create a Liquid-style formatter chain"
+    "description": "Create a formatter chain"
   },
   "Event Binding": {
     "prefix": "pevent",

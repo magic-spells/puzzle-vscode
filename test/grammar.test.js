@@ -178,7 +178,7 @@ async function main() {
     assertScope(lineWith(tokens, '<Card>'), 'Card', 'entity.name.tag.component.puzzle');
     const slotFallbackIf = lineWith(tokens, 'Fallback body');
     assertScope(slotFallbackIf, 'if', 'keyword.control.conditional.puzzle');
-    assertScope(slotFallbackIf, 'items.length', 'source.js.embedded.puzzle');
+    assertScope(slotFallbackIf, 'items.size', 'source.js.embedded.puzzle');
     assertScope(slotFallbackIf, 'ItemCard', 'entity.name.tag.component.puzzle');
     assertScope(slotFallbackIf, 'items[0]', 'source.js.embedded.puzzle');
     assertNoScope(slotFallbackIf, 'Fallback body', 'source.js.embedded.puzzle');
@@ -438,7 +438,8 @@ const stillJavaScript = true;
     // {#if}/{:else if}/{#unless}/{#case} condition headers, inline attribute
     // ifs included, take no formatter chain: a top-level `|` there is a compile
     // error, exactly like a pipe in a {#for} header or a {:when} value.
-    // `@event` handler bodies are JavaScript, so a pipe there stays bitwise.
+    // `@event` handler bodies are JavaScript, but a single `|` there is a
+    // compile error too (D176): no formatter, and no bitwise OR.
     const valuePipes = tokenize(grammar, `<puzzle-view>
   <a title={ price | currency } data-or={ a || b }>link</a>
   <Card total={ n | currency('$', 0) } />
@@ -457,6 +458,7 @@ const stillJavaScript = true;
   {#if ready |
     size}wrapped{/if}
   <button @click={ a | b } @keyup={ save({ id: todo.id }) }>go</button>
+  <button @click:prevent={ open(a || b) } @input={ flags |= 1 }>ok</button>
   { 'greeting' | t({ name: user.name }) } afterText
   { photo | resize({ height: 480 }) } tailText
   { fn({ a: 1 }) } plainTail
@@ -534,7 +536,8 @@ const stillJavaScript = true;
             assertNoScope(line, '||', 'invalid.illegal.formatter-pipe.puzzle', 0, i);
         }
     }
-    // A `|` nested in parentheses or brackets in a header is plain JavaScript.
+    // A `|` nested in parentheses or brackets in a header is left to the
+    // JavaScript grammar (the compiler rejects it, D176).
     const nestedHeader = lineWith(valuePipes, '{#if (bits | flag)}');
     assertScope(nestedHeader, '|', 'keyword.operator.bitwise.js');
     assertNoScope(nestedHeader, '|', 'invalid.illegal.formatter-pipe.puzzle');
@@ -547,9 +550,15 @@ const stillJavaScript = true;
     assertNoScope(lineWith(valuePipes, 'size}wrapped'), 'size', 'variable.function.formatter.puzzle');
 
     const handlerPipe = lineWith(valuePipes, '@click={ a | b }');
-    assertScope(handlerPipe, '|', 'keyword.operator.bitwise.js');
+    assertScope(handlerPipe, '|', 'invalid.illegal.formatter-pipe.puzzle');
     assertNoScope(handlerPipe, '|', 'keyword.operator.formatter.puzzle');
-    assertNoScope(handlerPipe, '|', 'invalid.illegal.formatter-pipe.puzzle');
+    assertNoScope(handlerPipe, 'b', 'variable.function.formatter.puzzle', 0, 1);
+    // `||` and `|=` in a handler body are JavaScript operators, not pipes.
+    const handlerOps = lineWith(valuePipes, '@click:prevent={ open(a || b) }');
+    assertScope(handlerOps, '||', 'keyword.operator.logical.js');
+    assertNoScope(handlerOps, '||', 'invalid.illegal.formatter-pipe.puzzle');
+    assertNoScope(handlerOps, '|=', 'invalid.illegal.formatter-pipe.puzzle');
+    assertScope(handlerOps, '|=', 'keyword.operator.assignment.compound.bitwise.js');
 
     // 0.8.0 (D173 V8): an object literal is legal in argument position. It is
     // a JavaScript object, not a nested interpolation, and the outer
@@ -569,7 +578,9 @@ const stillJavaScript = true;
     assertScope(handlerObject, 'go', 'text.html.puzzle');
     assertNoScope(handlerObject, 'go', 'source.js.embedded.puzzle');
 
-    // Only a top-level single `|` is a pipe: parenthesized it is bitwise OR.
+    // Only a top-level single `|` is a pipe. A nested one is a compile error
+    // (no bitwise OR in templates, D176) that the grammar leaves to the
+    // compiler: it tokenizes as JavaScript, never as a formatter pipe.
     const nested = lineWith(valuePipes, '(flags | mask)');
     assertScope(nested, '|', 'keyword.operator.bitwise.js');
     assertNoScope(nested, '|', 'invalid.illegal.formatter-pipe.puzzle');
@@ -599,6 +610,95 @@ const stillJavaScript = true;
     assertScope(preBody, 'trim', 'variable.function.formatter.puzzle');
     assertNoScope(preBody, 'exactly', 'source.js.embedded.puzzle');
     assertScope(lineWith(valuePipes, '{ draft }'), 'draft', 'source.js.embedded.puzzle');
+
+    // 0.8.0 (D176): template values are a data language. `.size` is the
+    // count; the grammar highlights data expressions with the JavaScript
+    // grammar and leaves the data-language rules (no calls, no `.length`, …)
+    // to the compiler.
+    const dataLanguage = tokenize(grammar, `<puzzle-view>
+  {#if todos.size > 0}<p>{ todos.size | compact_number } left</p>{/if}
+  <li class="{#if i === items.size - 1}last{/if}">{ items[items.size - 1] }</li>
+  <p>{ subtitle ?? 'Untitled' } { price * qty | currency }</p>
+  <p>{ n | pluralize('comment') } { createdAt | datetime('short') }</p>
+  <p>{ 'cart.count' | t({ count: n, unit }) } { label | kebab-name }</p>
+  <p>{ mask | bit-1 } { price | fmt.eur } afterBad</p>
+  <article>{ post.bodyHtml | raw }</article>
+  <p>{ note | trim | newline_to_br }</p>
+  <p>{ html | raw | upcase } { note | newline_to_br(2) } { html | raw |
+    upcase }</p>
+  <a title={ html | raw } href="{ path | link }" data-x="{ note | newline_to_br }">a</a>
+  <Card body={ html | raw } style="color:{ tone | raw }" key={ id | newline_to_br } />
+  <Slot name="row" item={ html | raw }>fallback { html | raw }</Slot>
+  <p>{ draft || raw } { rawish | raw_text } { a | rawValue }</p>
+</puzzle-view>`);
+
+    const sizeLine = lineWith(dataLanguage, '{#if todos.size');
+    assertScope(sizeLine, 'size', 'source.js.embedded.puzzle');
+    assertNoScope(sizeLine, 'size', 'invalid.illegal.formatter-pipe.puzzle');
+    assertScope(sizeLine, 'compact_number', 'variable.function.formatter.puzzle');
+    assertScope(lineWith(dataLanguage, 'items.size - 1'), 'items', 'source.js.embedded.puzzle', 0, 1);
+    const fallbackLine = lineWith(dataLanguage, "subtitle ?? 'Untitled'");
+    assertScope(fallbackLine, '??', 'keyword.operator.logical.js');
+    assertScope(fallbackLine, 'currency', 'variable.function.formatter.puzzle');
+    const presetLine = lineWith(dataLanguage, "pluralize('comment')");
+    assertScope(presetLine, 'pluralize', 'variable.function.formatter.puzzle');
+    assertScope(presetLine, 'datetime', 'variable.function.formatter.puzzle');
+    assertScope(presetLine, "'short'", 'string.quoted.single.js');
+
+    // A formatter name is an identifier, optionally kebab-case where every
+    // `-` starts a word with a letter. `bit-1` and a dotted `fmt.eur` are not
+    // names, so the pipe before them is a compile error.
+    const names = lineWith(dataLanguage, "'cart.count'");
+    assertScope(names, 't(', 'variable.function.formatter.puzzle');
+    assertScope(names, 'count:', 'meta.object-literal.key.js');
+    assertScope(names, 'kebab-name', 'variable.function.formatter.puzzle');
+    assertScope(names, 'kebab-name', 'variable.function.formatter.puzzle', 6);
+    const badNames = lineWith(dataLanguage, 'bit-1');
+    assertScope(badNames, '|', 'invalid.illegal.formatter-pipe.puzzle');
+    assertNoScope(badNames, 'bit', 'variable.function.formatter.puzzle');
+    assertScope(badNames, '|', 'invalid.illegal.formatter-pipe.puzzle', 0, 1);
+    assertNoScope(badNames, 'fmt', 'variable.function.formatter.puzzle');
+    assertNoScope(badNames, 'afterBad', 'source.js.embedded.puzzle');
+
+    // `raw` / `newline_to_br` (D174) as the last formatter of a text
+    // interpolation are ordinary formatters…
+    const rawLast = lineWith(dataLanguage, 'post.bodyHtml | raw');
+    assertScope(rawLast, 'raw', 'variable.function.formatter.puzzle');
+    assertNoScope(rawLast, 'raw', 'invalid.illegal.markup-formatter.puzzle');
+    const brText = lineWith(dataLanguage, 'trim | newline_to_br');
+    assertScope(brText, 'trim', 'variable.function.formatter.puzzle');
+    assertScope(brText, 'newline_to_br', 'variable.function.formatter.puzzle');
+    assertNoScope(brText, 'newline_to_br', 'invalid.illegal.markup-formatter.puzzle');
+    // …followed by another formatter or given arguments they are errors, the
+    // pipe itself still a pipe.
+    const rawNotLast = lineWith(dataLanguage, 'raw | upcase');
+    assertScope(rawNotLast, 'raw', 'invalid.illegal.markup-formatter.puzzle');
+    assertScope(rawNotLast, '|', 'keyword.operator.formatter.puzzle');
+    assertScope(rawNotLast, 'upcase', 'variable.function.formatter.puzzle');
+    assertScope(rawNotLast, 'newline_to_br', 'invalid.illegal.markup-formatter.puzzle');
+    assertScope(rawNotLast, 'raw', 'invalid.illegal.markup-formatter.puzzle', 0, 1);
+    // …and in any attribute value, prop, marker argument or key= they are
+    // errors wherever they sit in the chain; the marker's fallback body is
+    // text again.
+    const rawAttr = lineWith(dataLanguage, '<a title={ html | raw }');
+    assertScope(rawAttr, 'raw', 'invalid.illegal.markup-formatter.puzzle');
+    assertScope(rawAttr, 'link', 'variable.function.formatter.puzzle');
+    assertScope(rawAttr, 'newline_to_br', 'invalid.illegal.markup-formatter.puzzle');
+    const rawProp = lineWith(dataLanguage, '<Card body=');
+    assertScope(rawProp, 'raw', 'invalid.illegal.markup-formatter.puzzle');
+    assertScope(rawProp, 'raw', 'invalid.illegal.markup-formatter.puzzle', 0, 1);
+    assertScope(rawProp, 'color', 'support.type.property-name.css');
+    assertScope(rawProp, 'newline_to_br', 'invalid.illegal.markup-formatter.puzzle');
+    const rawArg = lineWith(dataLanguage, '<Slot name="row" item=');
+    assertScope(rawArg, 'raw', 'invalid.illegal.markup-formatter.puzzle');
+    assertScope(rawArg, 'raw', 'variable.function.formatter.puzzle', 0, 1);
+    assertNoScope(rawArg, 'raw', 'invalid.illegal.markup-formatter.puzzle', 0, 1);
+    // Only the exact names: `raw` as a value, `raw_text` and `rawValue` are not
+    // the markup formatters.
+    const rawLookalikes = lineWith(dataLanguage, 'draft || raw');
+    assertNoScope(rawLookalikes, 'raw', 'invalid.illegal.markup-formatter.puzzle');
+    assertScope(rawLookalikes, 'raw_text', 'variable.function.formatter.puzzle');
+    assertScope(rawLookalikes, 'rawValue', 'variable.function.formatter.puzzle');
 
     console.log('Puzzle TextMate grammar tests passed');
 }

@@ -17,7 +17,7 @@
         @keydown:enter:prevent={ open(item) } />
     {/for}
 
-    {#unless items.length}
+    {#unless items.size}
       <p>No items found.</p>
     {/unless}
   {/if}
@@ -47,7 +47,7 @@
   <Card>
     <Slot name="header"><h2>{ title | capitalize }</h2></Slot>
     <Children>
-      {#if items.length}<ItemCard item={ items[0] } />{:else}<p>Fallback body</p>{/if}
+      {#if items.size}<ItemCard item={ items[0] } />{:else}<p>Fallback body</p>{/if}
     </Children>
   </Card>
   <Slot>{ offset | number } remaining{#svg 'icons/empty.svg'}</Slot>

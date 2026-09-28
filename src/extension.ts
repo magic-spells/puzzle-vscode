@@ -1,18 +1,14 @@
 import * as vscode from 'vscode';
 
-// The Puzzle 0.8.0 standard formatter set (D174) plus the browser-only
-// built-ins and the i18n `t` (D175). Completion hints only: a formatter
-// name is never a grammar keyword, and apps register their own.
+// The Puzzle 0.8.0 standard formatter set (D174, D176: 27 names, `t` from the
+// i18n service, D175) plus the browser-only built-ins `link`, `timeago` and
+// `in_timezone`. Completion hints only: a formatter name is never a grammar
+// keyword, and apps register their own.
 const FORMATTERS = [
     // numbers
     'abs',
     'ceil',
     'floor',
-    'plus',
-    'minus',
-    'times',
-    'divided_by',
-    'modulo',
     'round',
     'currency',
     'percentage',
@@ -26,29 +22,27 @@ const FORMATTERS = [
     'strip',
     'truncate',
     'replace',
-    'split',
     'strip_html',
     'strip_newlines',
     'pluralize',
-    // markup
+    // markup: `raw` and `newline_to_br` only as the last formatter of a text
+    // interpolation
     'escape',
     'raw',
     'newline_to_br',
     // values
-    'default',
-    'size',
     'join',
     'json',
     // dates
     'date',
     'time',
     'datetime',
+    // translations: registered by the i18n service (D175)
+    't',
     // browser-only built-ins
     'link',
     'timeago',
-    'in_timezone',
-    // translations: registered by the i18n service (D175)
-    't'
+    'in_timezone'
 ];
 
 const EVENTS = [

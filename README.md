@@ -1,8 +1,8 @@
 # Puzzle for Visual Studio Code
 
 Language support for Puzzle single-file components (`.pzl`). The extension is
-kept in sync with the current Puzzle compiler grammar rather than older
-Svelte-style aliases.
+kept in sync with the current Puzzle compiler grammar rather than legacy
+aliases.
 
 ## Features
 
@@ -10,7 +10,8 @@ Svelte-style aliases.
 - JavaScript in `<script>` and TypeScript in `<script lang="ts">`
 - CSS in `<style>` and `<style scoped>`
 - CSS plus Puzzle expressions inside inline `style="..."` attributes
-- JavaScript expressions in interpolations, directives, and dynamic attributes
+- Template expressions in interpolations, directives, and dynamic attributes,
+  highlighted with the JavaScript grammar
 - Distinct component, event/action, modifier, formatter, and range scopes
 - Snippets and lightweight completions for current Puzzle constructs
 - `Puzzle: Insert Component Template` command
@@ -68,12 +69,27 @@ export default class AlbumView extends PuzzleView {
 
 The grammar tracks the **Puzzle 0.8.0** template grammar and recognizes:
 
+- Template values as a data language (D176): paths, literals and operators,
+  with `.size` for the count of a list or string
+  (`{#if todos.size > 0}`, `{ items[items.size - 1] }`) and `??` for a
+  fallback. The data-language rules (no calls on values, no `.length`, no
+  arrow functions, template literals or bitwise operators) are left to the
+  compiler; the grammar highlights the expression with the JavaScript grammar
 - `{ expression }` and formatter chains (`| formatter(args)`) in every value
   position (0.8.0): text, quoted and brace-only attribute values
   (`title={ price | currency }`), component props and marker arguments. Only a
-  top-level single `|` is a pipe — `||` stays logical OR, a parenthesized
-  `(a | b)` stays bitwise, and `@event` handler bodies are plain JavaScript. A
-  pipe not followed by a formatter name (`| 0`, `|=`) is marked invalid
+  top-level single `|` is a pipe; `||` stays logical OR. A pipe not followed by
+  a formatter name (`| 0`, `|=`, `| bit-1`, `| fmt.eur`) is marked invalid. A
+  formatter name is an identifier, optionally kebab-case (`| my-format`). A
+  `|` nested in parentheses, brackets or braces is a compile error the grammar
+  leaves to the compiler
+- `@event` handler bodies are JavaScript, but a single `|` there is marked
+  invalid: it is neither a formatter nor a bitwise OR. `||` and `|=` stay
+  JavaScript operators
+- The markup formatters `raw` and `newline_to_br` (D174) render only as the
+  last formatter of a text interpolation (`{ post.bodyHtml | raw }`). One
+  followed by another formatter, given arguments, or used in an attribute
+  value, component prop, marker argument or `key=` is marked invalid
 - Condition headers take no formatter chain (D173 V1): a top-level `|` in an
   `{#if}`, `{:else if}`, `{#unless}` or `{#case}` header, inline attribute
   `{#if}`s included, is marked invalid, as is any pipe in a `{#for}` header or
