@@ -120,7 +120,12 @@ The grammar tracks the **Puzzle 0.8.0** template grammar and recognizes:
 - `{#raw}…{/raw}`, where braces are literal bytes — no interpolation, block
   tags, or event bindings — while HTML stays structural.
   Content after the keyword is ignored (`{#raw json}`) and the closer tolerates
-  whitespace (`{/ raw }`).
+  whitespace (`{/ raw }`). The body is one opaque span, so a literal
+  `</puzzle-view>`, `</puzzle-skeleton>` or `</script>` inside it ends neither
+  the block nor the section.
+- HTML void elements (`area base br col embed hr img input link meta source
+  track wbr`) with or without the slash: `<br>`, `<br/>` and
+  `<input value={ x } readonly>` are whole elements
 - `@event={ expression }` and colon modifiers such as
   `@keydown:enter:prevent={ submit(event) }`, including `@click:outside`
 - The directive attributes `key`, `island`, `ref`, and `flip`
@@ -137,7 +142,8 @@ The grammar tracks the **Puzzle 0.8.0** template grammar and recognizes:
 Legacy `{#each}`, `{:elsif}`, dotted event modifiers such as `@click.prevent`,
 and lowercase markers such as `<slot>` or `<children>` are intentionally marked
 invalid because the Puzzle compiler does not accept them. `{#raw}` inside an
-attribute value is flagged for the same reason.
+attribute value is flagged for the same reason, and so is a void element's
+closing tag (`</br>`, `</input>`), which the compiler rejects.
 
 ## Development
 
@@ -177,6 +183,7 @@ standard installation location.
 | `\|` in an expression | `invalid.illegal.pipe.puzzle` |
 | `this` in an expression | `invalid.illegal.this.puzzle` |
 | Misplaced `raw` / `newline_to_br` | `invalid.illegal.markup-function.puzzle` |
+| Void element closing tag (`</br>`) | `invalid.illegal.void-close-tag.puzzle` |
 | Invalid legacy syntax | `invalid.illegal.*.puzzle` |
 
 ## Intentional limits

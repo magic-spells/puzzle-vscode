@@ -427,6 +427,74 @@ const stillJavaScript = true;
     // A keyword that merely starts with `raw` is not the raw block.
     assertScope(lineWith(edgeCases, '{#rawish}'), 'rawish', 'invalid.illegal.directive.puzzle');
 
+    // A {#raw} body is one opaque span, as the compiler's section splitter
+    // reads it: a literal </puzzle-view>, </puzzle-skeleton> or </script>
+    // inside it ends neither the raw block nor the section, and highlighting
+    // after {/raw} is the template's again.
+    const INVALID_VOID = 'invalid.illegal.void-close-tag.puzzle';
+    const rawSections = tokenize(grammar, `<puzzle-view>
+  <pre>{#raw}<puzzle-view>{ sample }</puzzle-view>{/raw}</pre> sameLineTail
+  <pre>{#raw}
+</puzzle-view>
+</puzzle-skeleton>
+</script>
+<script>
+const insideRaw = 1;
+  {/raw}</pre>
+  <p>{ afterRaw }</p>
+</puzzle-view>
+<puzzle-skeleton><pre>{#raw}</puzzle-skeleton>{ skel }{/raw}</pre><i>{ skelLive }</i></puzzle-skeleton>
+<script>
+const realScript = true;
+</script>`);
+    const rawSample = lineWith(rawSections, '{ sample }');
+    assertScope(rawSample, 'sample', 'meta.raw.puzzle');
+    assertNoScope(rawSample, 'sample', 'source.js.embedded.puzzle');
+    assertScope(rawSample, '</puzzle-view>', 'meta.raw.puzzle');
+    assertScope(rawSample, 'sameLineTail', 'meta.template.puzzle');
+    assertNoScope(rawSample, 'sameLineTail', 'meta.raw.puzzle');
+    for (const closer of ['</puzzle-view>', '</puzzle-skeleton>', '</script>']) {
+        const entry = rawSections.find(e => e.line === closer);
+        assertScope(entry, closer, 'meta.raw.puzzle', 2);
+        assertScope(entry, closer, 'meta.template.puzzle', 2);
+    }
+    assertScope(lineWith(rawSections, 'insideRaw'), 'insideRaw', 'meta.raw.puzzle');
+    assertNoScope(lineWith(rawSections, 'insideRaw'), 'insideRaw', 'source.js.embedded.puzzle');
+    const afterRaw = lineWith(rawSections, 'afterRaw');
+    assertScope(afterRaw, 'afterRaw', 'source.js.embedded.puzzle');
+    assertScope(afterRaw, 'afterRaw', 'meta.template.puzzle');
+    assertNoScope(afterRaw, 'afterRaw', 'meta.raw.puzzle');
+    const skeletonRaw = lineWith(rawSections, 'skelLive');
+    assertScope(skeletonRaw, 'skel ', 'meta.raw.puzzle');
+    assertNoScope(skeletonRaw, 'skel ', 'source.js.embedded.puzzle');
+    assertScope(skeletonRaw, 'skelLive', 'source.js.embedded.puzzle');
+    assertScope(skeletonRaw, 'skelLive', 'meta.template.skeleton.puzzle');
+    assertScope(lineWith(rawSections, 'realScript'), 'realScript', 'source.js.embedded.puzzle');
+
+    // HTML void elements need no slash; a void closing tag is an error, in a
+    // raw body too (HTML stays structural there). Exact lowercase names only.
+    const voids = tokenize(grammar, `<puzzle-view>
+  <p>a<br>b<br/>c<br />d<hr><img src="a.png"><wbr></p> <label>Name <input type="text" value={ v } readonly> required</label> voidOpen
+  <input type="text"></input> <p>a<br>b</br></p> </img> </wbr> voidClose
+  <Input label="x">hint</Input> </brx> </bR> </p> </Br> notVoidClose
+  {#raw}<p>a<br>b</br></p>{/raw} rawVoid
+</puzzle-view>`);
+    const voidOpen = lineWith(voids, 'voidOpen');
+    assert(!voidOpen.tokens.some(t => t.scopes.some(s => s.startsWith('invalid.'))), 'void start tags are legal');
+    assertScope(voidOpen, 'v }', 'source.js.embedded.puzzle');
+    assertScope(voidOpen, 'readonly', 'entity.other.attribute-name.html');
+    assertNoScope(voidOpen, 'required', 'source.js.embedded.puzzle');
+    const voidClose = lineWith(voids, 'voidClose');
+    for (const closer of ['</input>', '</br>', '</img>', '</wbr>']) {
+        assertScope(voidClose, closer, INVALID_VOID, 0);
+        assertScope(voidClose, closer, INVALID_VOID, 2);
+    }
+    assertNoScope(voidClose, '</p>', INVALID_VOID);
+    const notVoidClose = lineWith(voids, 'notVoidClose');
+    assert(!notVoidClose.tokens.some(t => t.scopes.some(s => s.startsWith('invalid.'))), 'non-void closers are legal');
+    assertScope(lineWith(voids, 'rawVoid'), '</br>', INVALID_VOID, 2);
+    assertScope(lineWith(voids, 'rawVoid'), '</br>', 'meta.raw.puzzle', 2);
+
     // ---------------------------------------------------------------------
     // The Puzzle 0.8.0 expression language (D176). Template expressions are
     // JavaScript-shaped and highlight with the JavaScript grammar; the grammar

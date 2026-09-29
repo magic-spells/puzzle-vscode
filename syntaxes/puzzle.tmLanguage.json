@@ -162,6 +162,7 @@
         { "include": "#component-element" },
         { "include": "#html-element" },
         { "include": "#component-close-tag" },
+        { "include": "#void-close-tag" },
         { "include": "#html-close-tag" },
         { "include": "text.html.basic#doctype" },
         { "include": "text.html.basic#entities" }
@@ -255,6 +256,17 @@
       "captures": {
         "1": { "name": "punctuation.definition.tag.begin.html" },
         "2": { "name": "entity.name.tag.component.puzzle" },
+        "3": { "name": "punctuation.definition.tag.end.html" }
+      }
+    },
+
+    "void-close-tag": {
+      "comment": "HTML void elements have no closing tag: <br>, <br/> and <input …> are whole elements, and a </br> or </input> is a compile error. Exact lowercase names only; <Input> is a component.",
+      "match": "(</)(area|base|br|col|embed|hr|img|input|link|meta|source|track|wbr)(>)",
+      "name": "invalid.illegal.void-close-tag.puzzle",
+      "captures": {
+        "1": { "name": "punctuation.definition.tag.begin.html" },
+        "2": { "name": "entity.name.tag.html" },
         "3": { "name": "punctuation.definition.tag.end.html" }
       }
     },
@@ -701,6 +713,7 @@
       "contentName": "meta.raw.puzzle",
       "patterns": [
         { "include": "#html-comment" },
+        { "include": "#void-close-tag" },
         { "include": "#raw-close-tag" },
         { "include": "#raw-element" }
       ]
