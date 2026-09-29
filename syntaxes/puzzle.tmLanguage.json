@@ -28,6 +28,13 @@
         { "include": "#expression-invalid-markup-call" },
         { "include": "#library-function" }
       ]
+    },
+    "L:meta.embedded.handler.puzzle -comment -string.quoted.single.js -string.quoted.double.js -string.regexp.js -(string.template.js -meta.embedded.line.js)": {
+      "comment": "An @event value is a call to one of the view's handlers with data arguments. It highlights as plain JavaScript: no library-function scope and no markup-function rule, for the handler's name or anything in its arguments. Only the two compile errors every expression position shares apply.",
+      "patterns": [
+        { "include": "#expression-invalid-pipe" },
+        { "include": "#expression-invalid-this" }
+      ]
     }
   },
   "repository": {
@@ -391,7 +398,7 @@
       "endCaptures": {
         "0": { "name": "punctuation.section.embedded.end.puzzle" }
       },
-      "contentName": "meta.embedded.expression.puzzle source.js.embedded.puzzle",
+      "contentName": "meta.embedded.handler.puzzle source.js.embedded.puzzle",
       "patterns": [
         { "include": "#javascript-expression" }
       ]
@@ -410,7 +417,7 @@
       "endCaptures": {
         "0": { "name": "punctuation.section.embedded.end.puzzle" }
       },
-      "contentName": "meta.embedded.expression.puzzle source.js.embedded.puzzle",
+      "contentName": "meta.embedded.handler.puzzle source.js.embedded.puzzle",
       "patterns": [
         { "include": "#javascript-expression" }
       ]
@@ -429,7 +436,7 @@
       "endCaptures": {
         "0": { "name": "punctuation.section.embedded.end.puzzle" }
       },
-      "contentName": "meta.embedded.expression.puzzle source.js.embedded.puzzle",
+      "contentName": "meta.embedded.handler.puzzle source.js.embedded.puzzle",
       "patterns": [
         { "include": "#javascript-expression" }
       ]
@@ -870,7 +877,7 @@
     },
 
     "markup-interpolation": {
-      "comment": "A text interpolation whose outermost call is `raw(…)` or `newline_to_br(…)` (D176 §4): the one place those two functions may appear. The begin match claims the name, so any other `raw(`/`newline_to_br(` (nested in text, or anywhere in an attribute value, prop, marker argument, key/flip or handler) reaches #expression-invalid-markup-call instead. Only included in template text, never in attribute contexts.",
+      "comment": "A text interpolation whose outermost call is `raw(…)` or `newline_to_br(…)` (D176 §4): the one place those two functions may appear. The begin match claims the name, so any other `raw(`/`newline_to_br(` (nested in text, or anywhere in an attribute value, prop, marker argument, key/flip or block header) reaches #expression-invalid-markup-call instead. An @event value never reaches it. Only included in template text, never in attribute contexts.",
       "begin": "(\\{)(?![#:/])\\s*(raw|newline_to_br)(?=\\s*\\()",
       "beginCaptures": {
         "1": { "name": "punctuation.section.embedded.begin.puzzle" },
@@ -893,7 +900,7 @@
     },
 
     "expression-invalid-this": {
-      "comment": "`this` is not a template identifier (D176 §7), handlers included. A member named `this` (`x.this`, `x?.this`) and an object key (`{ this: 1 }`) are ordinary names.",
+      "comment": "`this` is not a template identifier (D176 §7), @event handlers included. A member named `this` (`x.this`, `x?.this`) and an object key (`{ this: 1 }`) are ordinary names.",
       "patterns": [
         {
           "match": "(?<![.$\\w])this(?![$\\w])(?!\\s*:)",
@@ -910,13 +917,13 @@
     },
 
     "expression-invalid-markup-call": {
-      "comment": "`raw(…)` and `newline_to_br(…)` may only be the whole of a text interpolation (#markup-interpolation). Called anywhere else, the name is a compile error.",
+      "comment": "`raw(…)` and `newline_to_br(…)` may only be the whole of a text interpolation (#markup-interpolation). Called anywhere else in a template expression, the name is a compile error. @event values are plain JavaScript and never see this rule.",
       "match": "(?<![.$\\w])(?:raw|newline_to_br)(?![$\\w])(?=\\s*\\()",
       "name": "invalid.illegal.markup-function.puzzle"
     },
 
     "library-function": {
-      "comment": "A bare call to a function from the Puzzle library (D176 §4): the 19 standard functions plus PuzzleKit's `link` and `timeago`. `raw` and `newline_to_br` are scoped by #markup-interpolation. A method (`x.date()`) is not a library call.",
+      "comment": "A bare call to a function from the Puzzle library (D176 §4): the 19 standard functions plus PuzzleKit's `link` and `timeago`. `raw` and `newline_to_br` are scoped by #markup-interpolation. Not applied in an @event value, whose calls are plain calls. A method (`x.date()`) is not a library call.",
       "match": "(?<![.$\\w])(?:round|currency|percentage|number_with_delimiter|compact_number|pluralize|capitalize|truncate|strip_html|strip_newlines|escape|json|datetime|date|time|in_timezone|timeago|link|t)(?![$\\w])(?=\\s*\\()",
       "name": "support.function.library.puzzle"
     },

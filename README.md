@@ -83,18 +83,26 @@ The grammar tracks the **Puzzle 0.8.0** template grammar and recognizes:
   `truncate`, `strip_html`, `strip_newlines`, `escape`, `raw`,
   `newline_to_br`, `json`, `date`, `time`, `datetime`, `in_timezone`, `t`,
   `link` and `timeago` carry `support.function.library.puzzle`. A method with
-  the same name (`x.date()`) does not
+  the same name (`x.date()`) does not. Library completions are offered in
+  every template expression except an `@event` value
+- `@event` values as plain calls: a handler is a call to one of the view's
+  methods with data arguments (`@click={ select(item.id) }`,
+  `@input={ setName(event.target.value) }`, or a ternary choosing between two
+  handlers). The handler's name and everything in its arguments highlight as
+  ordinary JavaScript (`entity.name.function.js`), with no library scope and
+  no markup-function rule, even when a name matches a library function
 - No `|` in a template expression: there is no pipe and no bitwise OR, so a
   single `|` anywhere in an interpolation, attribute value, prop, marker
   argument, block header or `@event` handler is marked invalid. `||` is
   logical OR, and a `|` inside a string or template-literal text is text
-- No `this` in a template expression, handlers included: every value comes
+- No `this` in a template expression, `@event` handlers included: every value comes
   through `data()`. A member named `this` (`x.this`) and an object key are
   ordinary names
 - `raw(html)` and `newline_to_br(text)` only as the whole (outermost call) of
   a text interpolation (`{ raw(post.bodyHtml) }`). Nested in another call, or
   anywhere in an attribute value, component prop, marker argument, `key=`,
-  `flip=` or handler, the name is marked invalid
+  `flip=` or block header, the name is marked invalid. `@event` values never
+  get this rule
 - The other expression rules (the method table, the excluded operators such
   as `**`, `new` and `typeof`, the global namespaces) are the compiler's; the
   grammar does not flag them
@@ -164,6 +172,7 @@ standard installation location.
 | Event modifier | `storage.modifier.event.puzzle` |
 | Library function call | `support.function.library.puzzle` |
 | Template expression | `meta.embedded.expression.puzzle` |
+| `@event` handler value | `meta.embedded.handler.puzzle` |
 | Range operator | `keyword.operator.range.puzzle` |
 | `\|` in an expression | `invalid.illegal.pipe.puzzle` |
 | `this` in an expression | `invalid.illegal.this.puzzle` |

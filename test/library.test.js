@@ -4,7 +4,7 @@
 // completions (src/library.ts, compiled to out/library.js by `npm test`).
 
 const assert = require('assert');
-const { LIBRARY, insideTemplateExpression } = require('../out/library.js');
+const { LIBRARY, insideLibraryContext } = require('../out/library.js');
 
 // The Puzzle function library (D176 §4): 19 standard functions plus
 // PuzzleKit's `link` and `timeago`.
@@ -35,7 +35,7 @@ for (const name of ['date', 'time', 'datetime']) {
 }
 assert.strictEqual(LIBRARY.find(fn => fn.name === 'currency').insert, 'currency($1)');
 
-// insideTemplateExpression: the text is the document up to the cursor.
+// insideLibraryContext: the text is the document up to the cursor.
 const view = '<puzzle-view>\n';
 const yes = [
     `${view}<p>{ cur`,
@@ -43,7 +43,6 @@ const yes = [
     `${view}<a title={ cur`,
     `${view}<a class="x { cur`,
     `${view}{#if items.length > 0 && cur`,
-    `${view}<button @click={ save(cur`,
     `${view}<p>{ t('key', { count: cur`,
     `${view}<p>{ a }</p>\n<p>{ '}' + cur`,
     `${view}<p>It's { cur`,
@@ -60,13 +59,18 @@ const no = [
     `${view}{#svg 'icons/cur`,
     `${view}\\{ cur`,
     `${view}</puzzle-view>\n<script>\nconst x = { cur`,
-    '<script>\nconst x = { cur'
+    '<script>\nconst x = { cur',
+    // An @event value calls a view handler with data arguments.
+    `${view}<button @click={ save(cur`,
+    `${view}<button @click={ cur`,
+    `${view}<button @input:prevent = { on ? save(cur`,
+    `${view}<button @click={ save({ id: cur`
 ];
-for (const text of yes) assert(insideTemplateExpression(text), `expected an expression: ${JSON.stringify(text)}`);
-for (const text of no) assert(!insideTemplateExpression(text), `expected no expression: ${JSON.stringify(text)}`);
+for (const text of yes) assert(insideLibraryContext(text), `expected an expression: ${JSON.stringify(text)}`);
+for (const text of no) assert(!insideLibraryContext(text), `expected no expression: ${JSON.stringify(text)}`);
 // A closed {#raw} or {#comment} block does not swallow what follows.
-assert(insideTemplateExpression(`${view}{#raw}{ inert }{/raw}<p>{ cur`));
-assert(insideTemplateExpression(`${view}{#comment}{ inert }{/comment}<p>{ cur`));
-assert(insideTemplateExpression(`${view}<!-- { -->\n<p>{ cur`));
+assert(insideLibraryContext(`${view}{#raw}{ inert }{/raw}<p>{ cur`));
+assert(insideLibraryContext(`${view}{#comment}{ inert }{/comment}<p>{ cur`));
+assert(insideLibraryContext(`${view}<!-- { -->\n<p>{ cur`));
 
 console.log('Puzzle library completion tests passed');

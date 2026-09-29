@@ -517,7 +517,7 @@ const stillJavaScript = true;
   <li key={ id | x } flip={ f | g }>keyPipes</li>
   {#if a | b}x{:else if c | d}y{/if}{#unless e | f}z{/unless}{#case g | h}{:when i | j}w{/case}headerPipes
   {#for item in items | sort}{/for}<b class="{#if tags | size}t{/if}">forPipe</b>
-  <button @click={ save(a | b) } @input={ flags |= 1 }>handlerPipes</button>
+  <button @click={ save(a | b) } @input={ flags |= 1 } @blur={ a | b }>handlerPipes</button>
   { total &&
     ready | done } multiLinePipe
   <p>{ a || b } { a ||= b } { 'a | b' } { "c|d" } { \`e | f\` } { \`\${'g|h'}\` } notPipes</p>
@@ -550,8 +550,7 @@ const mask = a | b;
     assertScope(forPipe, '|', PIPE, 0, 1);
     assertNoScope(forPipe, 'forPipe', 'source.js.embedded.puzzle');
     const handlerPipes = lineWith(pipes, 'handlerPipes');
-    assertScope(handlerPipes, '|', PIPE);
-    assertScope(handlerPipes, '|', PIPE, 0, 1);
+    for (let i = 0; i < 3; i += 1) assertScope(handlerPipes, '|', PIPE, 0, i);
     assertScope(lineWith(pipes, 'ready | done'), '|', PIPE);
     const notPipes = lineWith(pipes, 'notPipes');
     assertScope(notPipes, '||', 'keyword.operator.logical.js');
@@ -573,7 +572,7 @@ const mask = a | b;
   <p>{ this } { this.x } { f(this) } { user.name + this?.y } { (this) } { this[k] } textThis</p>
   <p class={ this.cls } data-x="{ this.x }">attrThis</p>
   {#if this.ready}r{/if}{#for i in this.items}{/for}headerThis
-  <button @click={ this.save() } @input={ save(this) }>handlerThis</button>
+  <button @click={ this.save() } @input={ save(this) } @blur={ save(this.x) }>handlerThis</button>
   <p>{ a ? this : b } ternaryThis</p>
   <p>{ a.this } { a?.this } { ({ this: 1 }).this } { thisValue } { $this } { _this } okThis</p>
 </puzzle-view>
@@ -589,8 +588,7 @@ this.ready = true;
     assertScope(headerThis, 'this', THIS);
     assertScope(headerThis, 'this', THIS, 0, 1);
     const handlerThis = lineWith(thisTokens, 'handlerThis');
-    assertScope(handlerThis, 'this', THIS);
-    assertScope(handlerThis, 'this', THIS, 0, 1);
+    for (let i = 0; i < 3; i += 1) assertScope(handlerThis, 'this', THIS, 0, i);
     assertScope(lineWith(thisTokens, 'ternaryThis'), 'this', THIS);
     const okThis = lineWith(thisTokens, 'okThis');
     for (let i = 0; i < 4; i += 1) assertNoScope(okThis, 'this', THIS, 0, i);
@@ -607,7 +605,6 @@ this.ready = true;
   <a title={ raw(html) } href="{ newline_to_br(x) }" style="color:{ raw(tone) }">attrMarkup</a>
   <Card body={ raw(html) } /><Slot name="row" item={ newline_to_br(note) }>{ raw(html) } markerMarkup</Slot>
   <li key={ raw(id) } flip={ newline_to_br(f) }>keyMarkup</li>
-  <button @click={ raw(x) }>handlerMarkup</button>
   <p>{ draft || raw } { x.raw(y) } { rawish(y) } { raw_text(y) } { 'raw(x)' } notMarkup</p>
 </puzzle-view>`);
 
@@ -633,8 +630,7 @@ this.ready = true;
     for (const [needle, count] of [
         ['attrMarkup', 3],
         ['markerMarkup', 2],
-        ['keyMarkup', 2],
-        ['handlerMarkup', 1]
+        ['keyMarkup', 2]
     ]) {
         const line = lineWith(markup, needle);
         const names = [...line.line.matchAll(/\b(?:raw|newline_to_br)(?=\()/g)];
@@ -653,6 +649,42 @@ this.ready = true;
     const notMarkup = lineWith(markup, 'notMarkup');
     for (const needle of ['raw }', 'raw(y)', 'rawish', 'raw_text', "raw(x)'"]) {
         assertNoScope(notMarkup, needle, MARKUP);
+    }
+
+    // An @event value is a call to a view handler with data arguments. It is
+    // plain JavaScript: the handler's name keeps the function-call scope even
+    // when it matches a library name, and nothing in its arguments gets the
+    // library scope or the markup-function rule. Only `|` and `this` are
+    // flagged there, as everywhere.
+    const handlers = tokenize(grammar, `<puzzle-view>
+  <button @click={ save(raw(x)) } @input={ newline_to_br(event.target.value) }>handlerMarkup</button>
+  <button @click={ date(x) } @input={ raw(h) } @blur={ select(currency(item.price)) }>handlerLibrary</button>
+  <button @click={ on ? date(d) : save(t('k'), truncate(s, 3)) }>handlerTernary</button>
+</puzzle-view>`);
+    const FUNCTION = 'entity.name.function.js';
+    const handlerMarkup = lineWith(handlers, 'handlerMarkup');
+    for (const needle of ['save', 'raw', 'newline_to_br']) {
+        assertScope(handlerMarkup, needle, FUNCTION);
+        assertNoScope(handlerMarkup, needle, MARKUP);
+        assertNoScope(handlerMarkup, needle, LIBRARY);
+    }
+    assertScope(handlerMarkup, 'event', 'source.js.embedded.puzzle');
+    const handlerLibrary = lineWith(handlers, 'handlerLibrary');
+    for (const needle of ['date', 'raw', 'select', 'currency']) {
+        assertScope(handlerLibrary, needle, FUNCTION);
+        assertNoScope(handlerLibrary, needle, LIBRARY);
+        assertNoScope(handlerLibrary, needle, MARKUP);
+    }
+    const handlerTernary = lineWith(handlers, 'handlerTernary');
+    for (const needle of ['date', 'save', "t('k')", 'truncate']) {
+        assertScope(handlerTernary, needle, FUNCTION);
+        assertNoScope(handlerTernary, needle, LIBRARY);
+    }
+    for (const entry of handlers) {
+        assert(
+            !entry.tokens.some(token => token.scopes.some(scope => scope.startsWith('invalid.'))),
+            `no handler construct here is flagged: ${entry.line}`
+        );
     }
 
     // Everything else is the compiler's: method-table membership, excluded

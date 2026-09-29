@@ -43,12 +43,13 @@ export const LIBRARY: LibraryFunction[] = [
     { name: 'timeago', signature: 'timeago(value)', insert: 'timeago($1)', documentation: '`2 hours ago`, `in 3 days`, in the locale.' }
 ];
 
-// Whether the end of `text` (a document up to the cursor) sits inside an
-// open `{ … }` of a <puzzle-view> or <puzzle-skeleton> section: an
-// interpolation, a brace attribute value, an @event handler, or a block
-// header. HTML comments, {#comment} and {#raw} bodies, {## notes} and {#svg}
-// paths are not expressions. A light scan, not a parser.
-export function insideTemplateExpression(text: string): boolean {
+// Whether the end of `text` (a document up to the cursor) sits where a
+// library call belongs: inside an open `{ … }` of a <puzzle-view> or
+// <puzzle-skeleton> section that is an interpolation, a brace attribute
+// value, or a block header. An @event value is not one: it calls a view
+// handler with data arguments. HTML comments, {#comment} and {#raw} bodies,
+// {## notes} and {#svg} paths are not expressions. A light scan, not a parser.
+export function insideLibraryContext(text: string): boolean {
     const sectionStart = Math.max(text.lastIndexOf('<puzzle-view'), text.lastIndexOf('<puzzle-skeleton'));
     const sectionEnd = Math.max(text.lastIndexOf('</puzzle-view>'), text.lastIndexOf('</puzzle-skeleton>'));
     if (sectionStart < 0 || sectionEnd > sectionStart) return false;
@@ -91,5 +92,6 @@ export function insideTemplateExpression(text: string): boolean {
         }
     }
     if (skipTo || quote || !openers.length) return false;
+    if (/@[$A-Za-z_][$\w.:-]*\s*=\s*$/.test(body.slice(Math.max(0, openers[0] - 200), openers[0]))) return false;
     return !/^\{(?:##|#svg|\/)/.test(body.slice(openers[0], openers[0] + 5));
 }

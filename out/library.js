@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.insideTemplateExpression = exports.LIBRARY = void 0;
+exports.insideLibraryContext = exports.LIBRARY = void 0;
 const DATE_PRESET = "'${2|short,medium,long,iso|}'";
 exports.LIBRARY = [
     // numbers
@@ -32,12 +32,13 @@ exports.LIBRARY = [
     { name: 'link', signature: 'link(path)', insert: "link('${1:/path}')", documentation: 'The URL for an app path in the active routing mode.' },
     { name: 'timeago', signature: 'timeago(value)', insert: 'timeago($1)', documentation: '`2 hours ago`, `in 3 days`, in the locale.' }
 ];
-// Whether the end of `text` (a document up to the cursor) sits inside an
-// open `{ … }` of a <puzzle-view> or <puzzle-skeleton> section: an
-// interpolation, a brace attribute value, an @event handler, or a block
-// header. HTML comments, {#comment} and {#raw} bodies, {## notes} and {#svg}
-// paths are not expressions. A light scan, not a parser.
-function insideTemplateExpression(text) {
+// Whether the end of `text` (a document up to the cursor) sits where a
+// library call belongs: inside an open `{ … }` of a <puzzle-view> or
+// <puzzle-skeleton> section that is an interpolation, a brace attribute
+// value, or a block header. An @event value is not one: it calls a view
+// handler with data arguments. HTML comments, {#comment} and {#raw} bodies,
+// {## notes} and {#svg} paths are not expressions. A light scan, not a parser.
+function insideLibraryContext(text) {
     const sectionStart = Math.max(text.lastIndexOf('<puzzle-view'), text.lastIndexOf('<puzzle-skeleton'));
     const sectionEnd = Math.max(text.lastIndexOf('</puzzle-view>'), text.lastIndexOf('</puzzle-skeleton>'));
     if (sectionStart < 0 || sectionEnd > sectionStart)
@@ -88,7 +89,9 @@ function insideTemplateExpression(text) {
     }
     if (skipTo || quote || !openers.length)
         return false;
+    if (/@[$A-Za-z_][$\w.:-]*\s*=\s*$/.test(body.slice(Math.max(0, openers[0] - 200), openers[0])))
+        return false;
     return !/^\{(?:##|#svg|\/)/.test(body.slice(openers[0], openers[0] + 5));
 }
-exports.insideTemplateExpression = insideTemplateExpression;
+exports.insideLibraryContext = insideLibraryContext;
 //# sourceMappingURL=library.js.map

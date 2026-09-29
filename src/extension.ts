@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { LIBRARY, LibraryFunction, insideTemplateExpression } from './library';
+import { LIBRARY, LibraryFunction, insideLibraryContext } from './library';
 
 const EVENTS = [
     'click',
@@ -133,9 +133,10 @@ function provideCompletionItems(
     }
 
     // A bare name inside a template expression can be a library call. A name
-    // after `.` is a member or a method, never a library function.
+    // after `.` is a member or a method, never a library function, and an
+    // @event value calls a view handler, so the library is not offered there.
     const upToCursor = document.getText(new vscode.Range(new vscode.Position(0, 0), position));
-    if (!/\.\s*[$\w]*$/.test(prefix) && insideTemplateExpression(upToCursor)) {
+    if (!/\.\s*[$\w]*$/.test(prefix) && insideLibraryContext(upToCursor)) {
         return LIBRARY.map(libraryCompletion);
     }
 

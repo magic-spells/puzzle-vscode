@@ -98,9 +98,10 @@ function provideCompletionItems(document, position) {
         return EVENTS.map(event => snippet(event, `${event}={ \${1:handler} }`, `Bind the ${event} event`));
     }
     // A bare name inside a template expression can be a library call. A name
-    // after `.` is a member or a method, never a library function.
+    // after `.` is a member or a method, never a library function, and an
+    // @event value calls a view handler, so the library is not offered there.
     const upToCursor = document.getText(new vscode.Range(new vscode.Position(0, 0), position));
-    if (!/\.\s*[$\w]*$/.test(prefix) && (0, library_1.insideTemplateExpression)(upToCursor)) {
+    if (!/\.\s*[$\w]*$/.test(prefix) && (0, library_1.insideLibraryContext)(upToCursor)) {
         return library_1.LIBRARY.map(libraryCompletion);
     }
     return [];
