@@ -475,7 +475,7 @@ const realScript = true;
     // raw body too (HTML stays structural there). Exact lowercase names only.
     const voids = tokenize(grammar, `<puzzle-view>
   <p>a<br>b<br/>c<br />d<hr><img src="a.png"><wbr></p> <label>Name <input type="text" value={ v } readonly> required</label> voidOpen
-  <input type="text"></input> <p>a<br>b</br></p> </img> </wbr> voidClose
+  <input type="text"></input> <p>a<br>b</br></p> </img> </wbr> </hr > voidClose
   <Input label="x">hint</Input> </brx> </bR> </p> </Br> notVoidClose
   {#raw}<p>a<br>b</br></p>{/raw} rawVoid
 </puzzle-view>`);
@@ -485,7 +485,7 @@ const realScript = true;
     assertScope(voidOpen, 'readonly', 'entity.other.attribute-name.html');
     assertNoScope(voidOpen, 'required', 'source.js.embedded.puzzle');
     const voidClose = lineWith(voids, 'voidClose');
-    for (const closer of ['</input>', '</br>', '</img>', '</wbr>']) {
+    for (const closer of ['</input>', '</br>', '</img>', '</wbr>', '</hr >']) {
         assertScope(voidClose, closer, INVALID_VOID, 0);
         assertScope(voidClose, closer, INVALID_VOID, 2);
     }

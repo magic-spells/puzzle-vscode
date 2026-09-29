@@ -262,7 +262,7 @@
 
     "void-close-tag": {
       "comment": "HTML void elements have no closing tag: <br>, <br/> and <input …> are whole elements, and a </br> or </input> is a compile error. Exact lowercase names only; <Input> is a component.",
-      "match": "(</)(area|base|br|col|embed|hr|img|input|link|meta|source|track|wbr)(>)",
+      "match": "(</)(area|base|br|col|embed|hr|img|input|link|meta|source|track|wbr)\\s*(>)",
       "name": "invalid.illegal.void-close-tag.puzzle",
       "captures": {
         "1": { "name": "punctuation.definition.tag.begin.html" },
