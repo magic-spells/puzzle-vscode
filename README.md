@@ -136,8 +136,10 @@ The grammar tracks the **Puzzle 0.8.0** template grammar and recognizes:
 - Marker arguments (D166): a brace-valued attribute on `<Children>` or `<Slot>`
   other than `name` is a per-stamp argument, and highlights as embedded
   JavaScript — `<Slot name="row" user={ user }>fallback</Slot>`
-- Capitalized component tags and ordinary HTML tags, including dotted
-  component-family member paths such as `<Frame.Wrapper>` (D167)
+- Component tags and ordinary HTML tags, including dotted component-family
+  member paths such as `<Frame.Wrapper>` (D167). A tag is a component when its
+  first character is anything but an ASCII lowercase letter, so `<Übersicht>`,
+  `<概要>` and `<_x>` are components and `<straße-karte>` is an element
 
 Legacy `{#each}`, `{:elsif}`, dotted event modifiers such as `@click.prevent`,
 and lowercase markers such as `<slot>` or `<children>` are intentionally marked

@@ -259,6 +259,63 @@ async function main() {
     assertScope(lineWith(tokens, '<Slot.Custom/>'), 'Slot.Custom', 'entity.name.tag.component.puzzle');
     assertNoScope(lineWith(tokens, '<Slot.Custom/>'), 'Slot.Custom', 'entity.name.tag.marker.puzzle');
 
+    // A tag is a component when its first character is anything but an ASCII
+    // lowercase letter (D167): identifier letters past ASCII and a leading '_'
+    // count. A tag starting with a-z is an element, non-ASCII after it or not.
+    const COMPONENT = 'entity.name.tag.component.puzzle';
+    const ELEMENT = 'entity.name.tag.html';
+    const unicodeTags = tokenize(grammar, `<puzzle-view>
+  <Übersicht/> uA
+  <概要/> uB
+  <Frame.Übersicht/> uC
+  <_foo/> uD
+  <Übersicht title={ x }></Übersicht> uE
+  <概要>body</概要> uF
+  <ärmel/> uG
+  <straße-karte>k</straße-karte> uH
+  <div>d</div> uI
+  <my-élément>e</my-élément> uJ
+  <Frame-x/> uK
+  <Frame:Wrapper/> uL
+  <Frame./> uM
+  <Slot.Foo/> uN
+  <Children/><Slot/><Slot name="row"/> uO
+  under <$50 uP
+</puzzle-view>`);
+    const tagLine = marker => lineWith(unicodeTags, marker);
+    for (const [marker, name] of [['uA', 'Übersicht'], ['uB', '概要'], ['uC', 'Frame.Übersicht'], ['uD', '_foo'], ['uG', 'ärmel']]) {
+        assertScope(tagLine(marker), name, COMPONENT);
+        assertScope(tagLine(marker), name, COMPONENT, name.length - 1);
+        assertNoScope(tagLine(marker), name, ELEMENT);
+    }
+    // Opening and closing tags alike, with props on the opening tag.
+    for (const [marker, name] of [['uE', 'Übersicht'], ['uF', '概要']]) {
+        assertScope(tagLine(marker), name, COMPONENT);
+        assertScope(tagLine(marker), name, COMPONENT, name.length - 1, 1);
+    }
+    assertScope(tagLine('uE'), 'title', 'entity.other.attribute-name.html');
+    assertScope(tagLine('uE'), 'x', 'source.js.embedded.puzzle');
+    for (const [marker, name] of [['uH', 'straße-karte'], ['uI', 'div'], ['uJ', 'my-élément']]) {
+        assertScope(tagLine(marker), name, ELEMENT);
+        assertScope(tagLine(marker), name, ELEMENT, name.length - 1);
+        assertScope(tagLine(marker), name, ELEMENT, name.length - 1, 1);
+        assertNoScope(tagLine(marker), name, COMPONENT);
+    }
+    // The D167 name errors keep their ASCII reading: the component scope stops
+    // where the identifier stops, and the grammar does not flag the rest.
+    for (const [marker, rest] of [['uK', '-x'], ['uL', ':Wrapper'], ['uM', './>']]) {
+        assertScope(tagLine(marker), 'Frame', COMPONENT, 4);
+        assertNoScope(tagLine(marker), rest, COMPONENT);
+    }
+    assertScope(tagLine('uN'), 'Slot.Foo', COMPONENT, 7);
+    assertNoScope(tagLine('uN'), 'Slot.Foo', 'entity.name.tag.marker.puzzle');
+    assertScope(tagLine('uO'), 'Children', 'entity.name.tag.marker.puzzle');
+    assertScope(tagLine('uO'), 'Slot', 'entity.name.tag.marker.puzzle');
+    assertScope(tagLine('uO'), 'Slot', 'entity.name.tag.marker.puzzle', 0, 1);
+    // '$' never starts a tag name: `<$50` is text.
+    assertNoScope(tagLine('uP'), '$50', COMPONENT);
+    assertNoScope(tagLine('uP'), '$50', ELEMENT);
+
     // Lowercase markers are compile errors (D134).
     assertScope(lineWith(tokens, '<slot name="nope">'), 'slot', 'invalid.illegal.marker.puzzle');
     assertScope(lineWith(tokens, '<children>'), 'children', 'invalid.illegal.marker.puzzle');

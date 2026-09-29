@@ -222,7 +222,8 @@
     },
 
     "component-element": {
-      "begin": "(<)([A-Z][A-Za-z0-9_]*(?:\\.[A-Za-z_][A-Za-z0-9_]*)*)\\b",
+      "comment": "A tag is a component when its first character is anything but an ASCII lowercase letter (D167): <Card>, <Übersicht>, <概要>, <_x>. The name is Ident('.'Ident)*, each segment a $-free JavaScript identifier, so <Frame.Übersicht> is a family member. A tag starting with a-z is an element, and may carry non-ASCII after that start (<straße-karte>).",
+      "begin": "(<)((?![a-z])[_\\p{ID_Start}][\\p{ID_Continue}\\x{200C}\\x{200D}]*(?:\\.[_\\p{ID_Start}][\\p{ID_Continue}\\x{200C}\\x{200D}]*)*)\\b",
       "beginCaptures": {
         "1": { "name": "punctuation.definition.tag.begin.html" },
         "2": { "name": "entity.name.tag.component.puzzle" }
@@ -238,7 +239,7 @@
     },
 
     "html-element": {
-      "begin": "(<)([a-z][A-Za-z0-9:-]*)\\b",
+      "begin": "(<)([a-z](?:[A-Za-z0-9:-]|[\\p{ID_Continue}\\x{200C}\\x{200D}&&[^\\x00-\\x7F]])*)\\b",
       "beginCaptures": {
         "1": { "name": "punctuation.definition.tag.begin.html" },
         "2": { "name": "entity.name.tag.html" }
@@ -254,7 +255,7 @@
     },
 
     "component-close-tag": {
-      "match": "(</)([A-Z][A-Za-z0-9_]*(?:\\.[A-Za-z_][A-Za-z0-9_]*)*)(>)",
+      "match": "(</)((?![a-z])[_\\p{ID_Start}][\\p{ID_Continue}\\x{200C}\\x{200D}]*(?:\\.[_\\p{ID_Start}][\\p{ID_Continue}\\x{200C}\\x{200D}]*)*)(>)",
       "captures": {
         "1": { "name": "punctuation.definition.tag.begin.html" },
         "2": { "name": "entity.name.tag.component.puzzle" },
@@ -274,7 +275,7 @@
     },
 
     "html-close-tag": {
-      "match": "(</)([a-z][A-Za-z0-9:-]*)(>)",
+      "match": "(</)([a-z](?:[A-Za-z0-9:-]|[\\p{ID_Continue}\\x{200C}\\x{200D}&&[^\\x00-\\x7F]])*)(>)",
       "captures": {
         "1": { "name": "punctuation.definition.tag.begin.html" },
         "2": { "name": "entity.name.tag.html" },
@@ -722,7 +723,7 @@
     },
 
     "raw-element": {
-      "begin": "(<)([A-Za-z][A-Za-z0-9:_-]*)",
+      "begin": "(<)((?:[A-Za-z]|[\\p{ID_Start}&&[^\\x00-\\x7F]])(?:[A-Za-z0-9:_-]|[\\p{ID_Continue}\\x{200C}\\x{200D}&&[^\\x00-\\x7F]])*)",
       "beginCaptures": {
         "1": { "name": "punctuation.definition.tag.begin.html" },
         "2": { "name": "entity.name.tag.html" }
@@ -738,7 +739,7 @@
     },
 
     "raw-close-tag": {
-      "match": "(</)([A-Za-z][A-Za-z0-9:_-]*)(>)",
+      "match": "(</)((?:[A-Za-z]|[\\p{ID_Start}&&[^\\x00-\\x7F]])(?:[A-Za-z0-9:_-]|[\\p{ID_Continue}\\x{200C}\\x{200D}&&[^\\x00-\\x7F]])*)(>)",
       "captures": {
         "1": { "name": "punctuation.definition.tag.begin.html" },
         "2": { "name": "entity.name.tag.html" },
