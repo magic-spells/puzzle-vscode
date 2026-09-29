@@ -17,7 +17,16 @@
         { "include": "#brace-escape" },
         { "include": "#invalid-raw-in-attribute" },
         { "include": "#puzzle-directives" },
-        { "include": "#attribute-interpolation" }
+        { "include": "#puzzle-interpolation" }
+      ]
+    },
+    "L:meta.embedded.expression.puzzle -comment -string.quoted.single.js -string.quoted.double.js -string.regexp.js -(string.template.js -meta.embedded.line.js)": {
+      "comment": "Template expressions (D176). These rules reach into every nested JavaScript construct of an expression (parentheses, call arguments, arrays, object literals, arrow bodies, template substitutions) but not into string or template-literal text or comments.",
+      "patterns": [
+        { "include": "#expression-invalid-pipe" },
+        { "include": "#expression-invalid-this" },
+        { "include": "#expression-invalid-markup-call" },
+        { "include": "#library-function" }
       ]
     }
   },
@@ -137,6 +146,7 @@
         { "include": "#puzzle-comment-inline" },
         { "include": "#puzzle-comment-block" },
         { "include": "#puzzle-directives" },
+        { "include": "#markup-interpolation" },
         { "include": "#puzzle-interpolation" },
         { "include": "#marker-element" },
         { "include": "#marker-close-tag" },
@@ -283,7 +293,7 @@
         { "include": "#brace-escape" },
         { "include": "#invalid-raw-in-attribute" },
         { "include": "#puzzle-directives" },
-        { "include": "#attribute-interpolation" },
+        { "include": "#puzzle-interpolation" },
         { "include": "#inline-css-double" }
       ]
     },
@@ -304,7 +314,7 @@
         { "include": "#brace-escape" },
         { "include": "#invalid-raw-in-attribute" },
         { "include": "#puzzle-directives" },
-        { "include": "#attribute-interpolation" },
+        { "include": "#puzzle-interpolation" },
         { "include": "#inline-css-single" }
       ]
     },
@@ -381,9 +391,8 @@
       "endCaptures": {
         "0": { "name": "punctuation.section.embedded.end.puzzle" }
       },
-      "contentName": "source.js.embedded.puzzle",
+      "contentName": "meta.embedded.expression.puzzle source.js.embedded.puzzle",
       "patterns": [
-        { "include": "#invalid-handler-pipe" },
         { "include": "#javascript-expression" }
       ]
     },
@@ -401,9 +410,8 @@
       "endCaptures": {
         "0": { "name": "punctuation.section.embedded.end.puzzle" }
       },
-      "contentName": "source.js.embedded.puzzle",
+      "contentName": "meta.embedded.expression.puzzle source.js.embedded.puzzle",
       "patterns": [
-        { "include": "#invalid-handler-pipe" },
         { "include": "#javascript-expression" }
       ]
     },
@@ -421,9 +429,8 @@
       "endCaptures": {
         "0": { "name": "punctuation.section.embedded.end.puzzle" }
       },
-      "contentName": "source.js.embedded.puzzle",
+      "contentName": "meta.embedded.expression.puzzle source.js.embedded.puzzle",
       "patterns": [
-        { "include": "#invalid-handler-pipe" },
         { "include": "#javascript-expression" }
       ]
     },
@@ -458,11 +465,8 @@
       "endCaptures": {
         "0": { "name": "punctuation.section.embedded.end.puzzle" }
       },
-      "contentName": "source.js.embedded.puzzle",
+      "contentName": "meta.embedded.expression.puzzle source.js.embedded.puzzle",
       "patterns": [
-        { "include": "#markup-formatter-in-attribute" },
-        { "include": "#formatter" },
-        { "include": "#invalid-pipe" },
         { "include": "#javascript-expression" }
       ]
     },
@@ -492,7 +496,7 @@
       "endCaptures": {
         "0": { "name": "punctuation.section.embedded.end.puzzle" }
       },
-      "contentName": "source.js.embedded.puzzle",
+      "contentName": "meta.embedded.expression.puzzle source.js.embedded.puzzle",
       "patterns": [
         { "include": "#javascript-expression" }
       ]
@@ -513,7 +517,7 @@
       "patterns": [
         { "include": "#brace-escape" },
         { "include": "#invalid-raw-in-attribute" },
-        { "include": "#attribute-interpolation" },
+        { "include": "#puzzle-interpolation" },
         { "include": "text.html.basic#entities" }
       ]
     },
@@ -533,7 +537,7 @@
       "patterns": [
         { "include": "#brace-escape" },
         { "include": "#invalid-raw-in-attribute" },
-        { "include": "#attribute-interpolation" },
+        { "include": "#puzzle-interpolation" },
         { "include": "text.html.basic#entities" }
       ]
     },
@@ -556,11 +560,8 @@
       "endCaptures": {
         "0": { "name": "punctuation.section.embedded.end.puzzle" }
       },
-      "contentName": "source.js.embedded.puzzle",
+      "contentName": "meta.embedded.expression.puzzle source.js.embedded.puzzle",
       "patterns": [
-        { "include": "#markup-formatter-in-attribute" },
-        { "include": "#formatter" },
-        { "include": "#invalid-pipe" },
         { "include": "#javascript-expression" }
       ]
     },
@@ -581,7 +582,7 @@
         { "include": "#brace-escape" },
         { "include": "#invalid-raw-in-attribute" },
         { "include": "#puzzle-directives" },
-        { "include": "#attribute-interpolation" },
+        { "include": "#puzzle-interpolation" },
         { "include": "text.html.basic#entities" }
       ]
     },
@@ -602,7 +603,7 @@
         { "include": "#brace-escape" },
         { "include": "#invalid-raw-in-attribute" },
         { "include": "#puzzle-directives" },
-        { "include": "#attribute-interpolation" },
+        { "include": "#puzzle-interpolation" },
         { "include": "text.html.basic#entities" }
       ]
     },
@@ -632,9 +633,8 @@
       "endCaptures": {
         "0": { "name": "punctuation.section.embedded.end.puzzle" }
       },
-      "contentName": "source.js.embedded.puzzle",
+      "contentName": "meta.embedded.expression.puzzle source.js.embedded.puzzle",
       "patterns": [
-        { "include": "#invalid-pipe" },
         { "include": "#javascript-expression" }
       ]
     },
@@ -650,11 +650,10 @@
       "endCaptures": {
         "0": { "name": "punctuation.section.embedded.end.puzzle" }
       },
-      "contentName": "source.js.embedded.puzzle",
+      "contentName": "meta.embedded.expression.puzzle source.js.embedded.puzzle",
       "patterns": [
         { "include": "#range-number-left" },
         { "include": "#range-operator" },
-        { "include": "#invalid-pipe" },
         { "include": "#javascript-expression" }
       ]
     },
@@ -802,9 +801,8 @@
       "endCaptures": {
         "0": { "name": "punctuation.section.embedded.end.puzzle" }
       },
-      "contentName": "source.js.embedded.puzzle",
+      "contentName": "meta.embedded.expression.puzzle source.js.embedded.puzzle",
       "patterns": [
-        { "include": "#invalid-pipe" },
         { "include": "#javascript-expression" }
       ]
     },
@@ -820,9 +818,8 @@
       "endCaptures": {
         "0": { "name": "punctuation.section.embedded.end.puzzle" }
       },
-      "contentName": "source.js.embedded.puzzle",
+      "contentName": "meta.embedded.expression.puzzle source.js.embedded.puzzle",
       "patterns": [
-        { "include": "#invalid-pipe" },
         { "include": "#javascript-expression" }
       ]
     },
@@ -866,79 +863,62 @@
       "endCaptures": {
         "0": { "name": "punctuation.section.embedded.end.puzzle" }
       },
-      "contentName": "meta.interpolation.puzzle source.js.embedded.puzzle",
+      "contentName": "meta.interpolation.puzzle meta.embedded.expression.puzzle source.js.embedded.puzzle",
       "patterns": [
-        { "include": "#markup-formatter-misplaced" },
-        { "include": "#formatter" },
-        { "include": "#invalid-pipe" },
         { "include": "#javascript-expression" }
       ]
     },
 
-    "attribute-interpolation": {
-      "comment": "`{ expression }` inside a quoted attribute value. Same as #puzzle-interpolation, except that an attribute value can never take a markup formatter (`raw`, `newline_to_br`).",
-      "begin": "\\{(?![#:/])",
+    "markup-interpolation": {
+      "comment": "A text interpolation whose outermost call is `raw(…)` or `newline_to_br(…)` (D176 §4): the one place those two functions may appear. The begin match claims the name, so any other `raw(`/`newline_to_br(` (nested in text, or anywhere in an attribute value, prop, marker argument, key/flip or handler) reaches #expression-invalid-markup-call instead. Only included in template text, never in attribute contexts.",
+      "begin": "(\\{)(?![#:/])\\s*(raw|newline_to_br)(?=\\s*\\()",
       "beginCaptures": {
-        "0": { "name": "punctuation.section.embedded.begin.puzzle" }
+        "1": { "name": "punctuation.section.embedded.begin.puzzle" },
+        "2": { "name": "meta.interpolation.puzzle meta.embedded.expression.puzzle source.js.embedded.puzzle support.function.library.puzzle" }
       },
       "end": "\\}",
       "endCaptures": {
         "0": { "name": "punctuation.section.embedded.end.puzzle" }
       },
-      "contentName": "meta.interpolation.puzzle source.js.embedded.puzzle",
+      "contentName": "meta.interpolation.puzzle meta.embedded.expression.puzzle source.js.embedded.puzzle",
       "patterns": [
-        { "include": "#markup-formatter-in-attribute" },
-        { "include": "#formatter" },
-        { "include": "#invalid-pipe" },
         { "include": "#javascript-expression" }
       ]
     },
 
-    "markup-formatter-misplaced": {
-      "comment": "The markup formatters `raw` and `newline_to_br` (D174) must be the last formatter of a text interpolation and take no arguments. One followed by another pipe or by a non-empty argument list is a compile error; empty parentheses (`raw()`) are allowed.",
-      "match": "(?<!\\|)(\\|)(?![|=])\\s*(raw|newline_to_br)(?=\\s*(?:\\((?!\\s*\\))|(?:\\(\\s*\\)\\s*)?\\|(?!\\|)))",
-      "captures": {
-        "1": { "name": "keyword.operator.formatter.puzzle" },
-        "2": { "name": "invalid.illegal.markup-formatter.puzzle" }
-      }
+    "expression-invalid-pipe": {
+      "comment": "There is no `|` in a template expression (D176 §1): no formatter pipe and no bitwise OR. A single `|` anywhere in one is a compile error; `||` is logical OR.",
+      "match": "(?<!\\|)\\|(?!\\|)",
+      "name": "invalid.illegal.pipe.puzzle"
     },
 
-    "markup-formatter-in-attribute": {
-      "comment": "A markup formatter (`raw`, `newline_to_br`, D174) renders only in a text interpolation. In an attribute value, a component prop, a marker argument or key/flip it is a compile error.",
-      "match": "(?<!\\|)(\\|)(?![|=])\\s*(raw|newline_to_br)(?![_$A-Za-z0-9]|-[A-Za-z])",
-      "captures": {
-        "1": { "name": "keyword.operator.formatter.puzzle" },
-        "2": { "name": "invalid.illegal.markup-formatter.puzzle" }
-      }
-    },
-
-    "invalid-handler-pipe": {
-      "comment": "An @event handler body is JavaScript, but a single top-level `|` there is a compile error (D176): formatter pipes format a displayed value and there is no bitwise OR in templates. `||` and `|=` are not pipes. A | nested in (), [] or {} is left to the JavaScript grammar.",
-      "match": "(?<!\\|)\\|(?![|=])",
-      "name": "invalid.illegal.formatter-pipe.puzzle"
-    },
-
-    "formatter": {
-      "comment": "A formatter pipe in a value position (D173 V1): `| name` or `| name(args)`, name = an identifier, optionally kebab-case where every `-` starts a word with a letter ([A-Za-z_$][A-Za-z0-9_$]*(-[A-Za-z][A-Za-z0-9_$]*)*). `||` is logical OR. A pipe that ends a line is a chain continued on the next line. Condition headers ({#if}, {:else if}, {#unless}, {#case}, inline attribute {#if}) do not include this rule: they take no formatter chain.",
+    "expression-invalid-this": {
+      "comment": "`this` is not a template identifier (D176 §7), handlers included. A member named `this` (`x.this`, `x?.this`) and an object key (`{ this: 1 }`) are ordinary names.",
       "patterns": [
         {
-          "match": "(?<!\\|)(\\|)(?![|=])\\s*([_$A-Za-z][_$A-Za-z0-9]*(?:-[A-Za-z][_$A-Za-z0-9]*)*)(?=\\s*(?:\\(|\\||\\}|$))",
-          "captures": {
-            "1": { "name": "keyword.operator.formatter.puzzle" },
-            "2": { "name": "variable.function.formatter.puzzle" }
-          }
+          "match": "(?<![.$\\w])this(?![$\\w])(?!\\s*:)",
+          "name": "invalid.illegal.this.puzzle"
         },
         {
-          "match": "(?<!\\|)\\|(?![|=])(?=\\s*$)",
-          "name": "keyword.operator.formatter.puzzle"
+          "comment": "`a ? this : b`: the `:` belongs to the conditional, not to an object key.",
+          "match": "(?<=\\?)\\s*(this)(?![$\\w])(?=\\s*:)",
+          "captures": {
+            "1": { "name": "invalid.illegal.this.puzzle" }
+          }
         }
       ]
     },
 
-    "invalid-pipe": {
-      "comment": "A top-level single | in a value position must be followed by a formatter name (D173 V1); anything else — `| 0`, `|= 2`, or any pipe in a {#for} header, a {:when} value, or an {#if}/{:else if}/{#unless}/{#case} condition (inline attribute {#if}s included) — is a compile error. `||` stays logical OR, and a | nested in (), [] or {} is left to the JavaScript grammar.",
-      "match": "(?<!\\|)\\|(?!\\|)",
-      "name": "invalid.illegal.formatter-pipe.puzzle"
+    "expression-invalid-markup-call": {
+      "comment": "`raw(…)` and `newline_to_br(…)` may only be the whole of a text interpolation (#markup-interpolation). Called anywhere else, the name is a compile error.",
+      "match": "(?<![.$\\w])(?:raw|newline_to_br)(?![$\\w])(?=\\s*\\()",
+      "name": "invalid.illegal.markup-function.puzzle"
+    },
+
+    "library-function": {
+      "comment": "A bare call to a function from the Puzzle library (D176 §4): the 19 standard functions plus PuzzleKit's `link` and `timeago`. `raw` and `newline_to_br` are scoped by #markup-interpolation. A method (`x.date()`) is not a library call.",
+      "match": "(?<![.$\\w])(?:round|currency|percentage|number_with_delimiter|compact_number|pluralize|capitalize|truncate|strip_html|strip_newlines|escape|json|datetime|date|time|in_timezone|timeago|link|t)(?![$\\w])(?=\\s*\\()",
+      "name": "support.function.library.puzzle"
     },
 
     "range-number-left": {

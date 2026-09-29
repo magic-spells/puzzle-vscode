@@ -125,7 +125,7 @@
       "\t${1:literal template text — braces are inert}",
       "{/raw}"
     ],
-    "description": "Emit a static block verbatim: no interpolation, directives, formatters, or event bindings"
+    "description": "Emit a static block verbatim: no interpolation, directives, or event bindings"
   },
   "Labeled Raw Block": {
     "prefix": "prawlabel",
@@ -164,10 +164,10 @@
     "body": ["{ ${1:expression} }"],
     "description": "Create a Puzzle interpolation"
   },
-  "Formatter Chain": {
-    "prefix": "pfilter",
-    "body": ["{ ${1:value} | ${2:trim} | ${3:capitalize} }"],
-    "description": "Create a formatter chain"
+  "Function Call": {
+    "prefix": "pcall",
+    "body": ["{ ${1|currency,date,truncate,pluralize,capitalize,t|}(${2:value}) }"],
+    "description": "Call a library function on a value"
   },
   "Event Binding": {
     "prefix": "pevent",

@@ -2,50 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.activate = void 0;
 const vscode = require("vscode");
-// The Puzzle 0.8.0 standard formatter set (D174, D176: 27 names, `t` from the
-// i18n service, D175) plus the browser-only built-ins `link`, `timeago` and
-// `in_timezone`. Completion hints only: a formatter name is never a grammar
-// keyword, and apps register their own.
-const FORMATTERS = [
-    // numbers
-    'abs',
-    'ceil',
-    'floor',
-    'round',
-    'currency',
-    'percentage',
-    'number_with_delimiter',
-    'compact_number',
-    // text
-    'downcase',
-    'upcase',
-    'capitalize',
-    'trim',
-    'strip',
-    'truncate',
-    'replace',
-    'strip_html',
-    'strip_newlines',
-    'pluralize',
-    // markup: `raw` and `newline_to_br` only as the last formatter of a text
-    // interpolation
-    'escape',
-    'raw',
-    'newline_to_br',
-    // values
-    'join',
-    'json',
-    // dates
-    'date',
-    'time',
-    'datetime',
-    // translations: registered by the i18n service (D175)
-    't',
-    // browser-only built-ins
-    'link',
-    'timeago',
-    'in_timezone'
-];
+const library_1 = require("./library");
 const EVENTS = [
     'click',
     'input',
@@ -74,7 +31,7 @@ const EVENT_MODIFIERS = [
     'delete'
 ];
 function activate(context) {
-    context.subscriptions.push(vscode.commands.registerCommand('puzzle.createComponent', insertComponentTemplate), vscode.languages.registerHoverProvider('puzzle', { provideHover }), vscode.languages.registerCompletionItemProvider('puzzle', { provideCompletionItems }, '#', ':', '@', '|'));
+    context.subscriptions.push(vscode.commands.registerCommand('puzzle.createComponent', insertComponentTemplate), vscode.languages.registerHoverProvider('puzzle', { provideHover }), vscode.languages.registerCompletionItemProvider('puzzle', { provideCompletionItems }, '#', ':', '@'));
 }
 exports.activate = activate;
 async function insertComponentTemplate() {
@@ -124,7 +81,7 @@ function provideCompletionItems(document, position) {
             snippet('case', "case ${1:value}}\n\t{:when ${2:'match'}}\n\t\t${3:content}\n\t{:else}\n\t\t${4:fallback}\n{/case}", 'Insert a case block'),
             snippet('svg', "svg '${1:icons/name.svg'}}", 'Inline an SVG file at compile time'),
             snippet('comment', 'comment}\n\t${1:notes}\n{/comment}', 'Insert a template comment block'),
-            snippet('raw', 'raw}\n\t${1:literal text — braces are inert}\n{/raw}', 'Insert a raw block: no interpolation, directives, formatters, or event bindings')
+            snippet('raw', 'raw}\n\t${1:literal text — braces are inert}\n{/raw}', 'Insert a raw block: no interpolation, directives, or event bindings')
         ];
     }
     if (/\{:$/.test(prefix)) {
@@ -140,11 +97,20 @@ function provideCompletionItems(document, position) {
     if (/@$/.test(prefix)) {
         return EVENTS.map(event => snippet(event, `${event}={ \${1:handler} }`, `Bind the ${event} event`));
     }
-    // A single `|` opens a formatter; `||` is logical OR.
-    if (/(?:^|[^|])\|\s*$/.test(prefix)) {
-        return FORMATTERS.map(formatter => completion(formatter, vscode.CompletionItemKind.Function, 'Puzzle formatter'));
+    // A bare name inside a template expression can be a library call. A name
+    // after `.` is a member or a method, never a library function.
+    const upToCursor = document.getText(new vscode.Range(new vscode.Position(0, 0), position));
+    if (!/\.\s*[$\w]*$/.test(prefix) && (0, library_1.insideTemplateExpression)(upToCursor)) {
+        return library_1.LIBRARY.map(libraryCompletion);
     }
     return [];
+}
+function libraryCompletion(fn) {
+    const item = new vscode.CompletionItem(fn.name, vscode.CompletionItemKind.Function);
+    item.detail = fn.signature;
+    item.documentation = new vscode.MarkdownString(fn.documentation);
+    item.insertText = new vscode.SnippetString(fn.insert);
+    return item;
 }
 function completion(label, kind, documentation) {
     const item = new vscode.CompletionItem(label, kind);

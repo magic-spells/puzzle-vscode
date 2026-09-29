@@ -12,8 +12,10 @@ aliases.
 - CSS plus Puzzle expressions inside inline `style="..."` attributes
 - Template expressions in interpolations, directives, and dynamic attributes,
   highlighted with the JavaScript grammar
-- Distinct component, event/action, modifier, formatter, and range scopes
-- Snippets and lightweight completions for current Puzzle constructs
+- Distinct component, event/action, modifier, library-function, and range
+  scopes
+- Snippets and lightweight completions for current Puzzle constructs,
+  including the function library as call snippets
 - `Puzzle: Insert Component Template` command
 
 HTML comments suppress Puzzle expressions, so documentation such as
@@ -39,7 +41,7 @@ HTML comments suppress Puzzle expressions, so documentation such as
   {/for}
 
   {#for 1...4, n}<span>{ n }</span>{/for}
-  <p>{ title | trim | capitalize }</p>
+  <p>{ capitalize(title.trim()) } · { currency(album.price) }</p>
 </puzzle-view>
 
 <puzzle-skeleton min-duration="250">
@@ -69,34 +71,33 @@ export default class AlbumView extends PuzzleView {
 
 The grammar tracks the **Puzzle 0.8.0** template grammar and recognizes:
 
-- Template values as a data language (D176): paths, literals and operators,
-  with `.size` for the count of a list or string
-  (`{#if todos.size > 0}`, `{ items[items.size - 1] }`) and `??` for a
-  fallback. The data-language rules (no calls on values, no `.length`, no
-  arrow functions, template literals or bitwise operators) are left to the
-  compiler; the grammar highlights the expression with the JavaScript grammar
-- `{ expression }` and formatter chains (`| formatter(args)`) in every value
-  position (0.8.0): text, quoted and brace-only attribute values
-  (`title={ price | currency }`), component props and marker arguments. Only a
-  top-level single `|` is a pipe; `||` stays logical OR. A pipe not followed by
-  a formatter name (`| 0`, `|=`, `| bit-1`, `| fmt.eur`) is marked invalid. A
-  formatter name is an identifier, optionally kebab-case (`| my-format`). A
-  `|` nested in parentheses, brackets or braces is a compile error the grammar
-  leaves to the compiler
-- `@event` handler bodies are JavaScript, but a single `|` there is marked
-  invalid: it is neither a formatter nor a bitwise OR. `||` and `|=` stay
-  JavaScript operators
-- The markup formatters `raw` and `newline_to_br` (D174) render only as the
-  last formatter of a text interpolation (`{ post.bodyHtml | raw }`). One
-  followed by another formatter, given arguments, or used in an attribute
-  value, component prop, marker argument or `key=` is marked invalid
-- Condition headers take no formatter chain (D173 V1): a top-level `|` in an
-  `{#if}`, `{:else if}`, `{#unless}` or `{#case}` header, inline attribute
-  `{#if}`s included, is marked invalid, as is any pipe in a `{#for}` header or
-  a `{:when}` value. The compiler rejects them; compute the value in `data()`
-  and test that field (`{#if hasTags}`), and write `||` for a logical OR
-- Object literals as call and formatter arguments (0.8.0) —
-  `{ 'greeting' | t({ name: user.name }) }`, `@click={ save({ id: todo.id }) }`
+- Template expressions as JavaScript expressions (D176): paths, literals,
+  operators, `??` and `?.`, template literals, object and array literals,
+  methods (`{ name.trim().toUpperCase() }`, `{#if items.length}`) and arrow
+  functions as call arguments (`{#for t in todos.filter(t => !t.done)}`),
+  highlighted with the JavaScript grammar
+- The Puzzle function library, called bare (`{ currency(price) }`,
+  `{ truncate(post.body, 120) }`, `{ date(d, 'short') }`,
+  `{ t('cart.count', { count: n }) }`): `round`, `currency`, `percentage`,
+  `number_with_delimiter`, `compact_number`, `pluralize`, `capitalize`,
+  `truncate`, `strip_html`, `strip_newlines`, `escape`, `raw`,
+  `newline_to_br`, `json`, `date`, `time`, `datetime`, `in_timezone`, `t`,
+  `link` and `timeago` carry `support.function.library.puzzle`. A method with
+  the same name (`x.date()`) does not
+- No `|` in a template expression: there is no pipe and no bitwise OR, so a
+  single `|` anywhere in an interpolation, attribute value, prop, marker
+  argument, block header or `@event` handler is marked invalid. `||` is
+  logical OR, and a `|` inside a string or template-literal text is text
+- No `this` in a template expression, handlers included: every value comes
+  through `data()`. A member named `this` (`x.this`) and an object key are
+  ordinary names
+- `raw(html)` and `newline_to_br(text)` only as the whole (outermost call) of
+  a text interpolation (`{ raw(post.bodyHtml) }`). Nested in another call, or
+  anywhere in an attribute value, component prop, marker argument, `key=`,
+  `flip=` or handler, the name is marked invalid
+- The other expression rules (the method table, the excluded operators such
+  as `**`, `new` and `typeof`, the global namespaces) are the compiler's; the
+  grammar does not flag them
 - `{#if}`, `{:else if}`, `{:else}`, `{/if}`
 - `{#unless}` and `{/unless}`
 - `{#for item in items, index}` and `{#for from...to, value}` (the two forms
@@ -109,7 +110,7 @@ The grammar tracks the **Puzzle 0.8.0** template grammar and recognizes:
 - `{#svg 'path/to/icon.svg'}` (void — it takes no closer)
 - `{#comment}` blocks and `{## inline notes }`
 - `{#raw}…{/raw}`, where braces are literal bytes — no interpolation, block
-  tags, formatter pipes, or event bindings — while HTML stays structural.
+  tags, or event bindings — while HTML stays structural.
   Content after the keyword is ignored (`{#raw json}`) and the closer tolerates
   whitespace (`{/ raw }`).
 - `@event={ expression }` and colon modifiers such as
@@ -137,6 +138,12 @@ npm install
 npm test
 ```
 
+`npm test` compiles the extension, runs the grammar tests (including every
+valid case of Puzzle's `expressions-parse.json` conformance table, copied to
+`test/fixtures/`, which must tokenize with no invalid scope) and the
+completion tests. Set `PUZZLE_CONFORMANCE` to test against another copy of the
+table.
+
 Press `F5` from VS Code to launch an Extension Development Host. The grammar
 test uses VS Code's own HTML, JavaScript, TypeScript, and CSS grammars; set
 `VSCODE_APP_ROOT` to the editor's `resources/app` directory when it is not in a
@@ -155,9 +162,12 @@ standard installation location.
 | Event/action sigil (`@`) | `keyword.operator.event.puzzle` |
 | Event/action name | `support.function.event.puzzle` |
 | Event modifier | `storage.modifier.event.puzzle` |
-| Formatter | `variable.function.formatter.puzzle` |
-| Formatter pipe | `keyword.operator.formatter.puzzle` |
+| Library function call | `support.function.library.puzzle` |
+| Template expression | `meta.embedded.expression.puzzle` |
 | Range operator | `keyword.operator.range.puzzle` |
+| `\|` in an expression | `invalid.illegal.pipe.puzzle` |
+| `this` in an expression | `invalid.illegal.this.puzzle` |
+| Misplaced `raw` / `newline_to_br` | `invalid.illegal.markup-function.puzzle` |
 | Invalid legacy syntax | `invalid.illegal.*.puzzle` |
 
 ## Intentional limits
