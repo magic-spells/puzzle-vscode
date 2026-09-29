@@ -23,6 +23,7 @@
     "L:meta.embedded.expression.puzzle -comment -string.quoted.single.js -string.quoted.double.js -string.regexp.js -(string.template.js -meta.embedded.line.js)": {
       "comment": "Template expressions (D176). These rules reach into every nested JavaScript construct of an expression (parentheses, call arguments, arrays, object literals, arrow bodies, template substitutions) but not into string or template-literal text or comments.",
       "patterns": [
+        { "include": "#expression-division" },
         { "include": "#expression-invalid-pipe" },
         { "include": "#expression-invalid-this" },
         { "include": "#expression-invalid-markup-call" },
@@ -30,8 +31,9 @@
       ]
     },
     "L:meta.embedded.handler.puzzle -comment -string.quoted.single.js -string.quoted.double.js -string.regexp.js -(string.template.js -meta.embedded.line.js)": {
-      "comment": "An @event value is a call to one of the view's handlers with data arguments. It highlights as plain JavaScript: no library-function scope and no markup-function rule, for the handler's name or anything in its arguments. Only the two compile errors every expression position shares apply.",
+      "comment": "An @event value is a call to one of the view's handlers with data arguments. It highlights as plain JavaScript: no library-function scope and no markup-function rule, for the handler's name or anything in its arguments. Only the two compile errors every expression position shares apply, and, as in every expression, a `/` is division.",
       "patterns": [
+        { "include": "#expression-division" },
         { "include": "#expression-invalid-pipe" },
         { "include": "#expression-invalid-this" }
       ]
@@ -904,6 +906,14 @@
       "patterns": [
         { "include": "#javascript-expression" }
       ]
+    },
+
+    "expression-division": {
+      "comment": "A template expression has no regex literals (D176), so every `/` in one is division. JavaScript's regex rule guesses from the character before the `/`, and its identifier test is ASCII-only: after an emoji name or a trailing-dot number (`5. / 2`) it would open a regex that runs to the next `/>` on the line. This rule claims the `/`, with any whitespace before it (where the regex rule can begin), ahead of that guess. `//` and `/*` are left to the comment rules.",
+      "match": "\\s*(/)(?![/*])",
+      "captures": {
+        "1": { "name": "keyword.operator.arithmetic.js" }
+      }
     },
 
     "expression-invalid-pipe": {

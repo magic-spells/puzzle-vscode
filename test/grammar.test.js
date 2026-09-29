@@ -766,6 +766,53 @@ this.ready = true;
         'compiler-only rules must not be flagged by the grammar'
     );
 
+    // A template expression has no regex literals (D176): every `/` in one is
+    // division, whatever precedes it — a non-ASCII name, a trailing-dot
+    // number, the word `of`. Each line carries a later `/` followed by `>` (a
+    // self-closing tag) that a regex guess would close on. A `/` in <script>
+    // is still JavaScript's.
+    const REGEXP = 'string.regexp.js';
+    const DIVIDE = 'keyword.operator.arithmetic.js';
+    const division = tokenize(grammar, `<puzzle-view>
+  <p>{ café / 2 }<br/>divAccent</p>
+  <p>{ 金額 / 2 }<br/>divCjk</p>
+  {#if 価格 / 2 > 1}<br/>{/if}<i>divIf</i>
+  <p>{ 5. / 2 }<br/>divDotNumber</p>
+  <p>{ of / 2 }<br/>divOf</p>
+  <b title={ 価格 / 2 }><br/>divAttribute</b>
+  <p>{ a.価格 / 2 }<br/>divMember</p>
+  <p>{ 𝑥 / 2 }<br/>divAstral</p>
+  <p>{ 😀 / 2 }<br/>divEmoji</p>
+  <p>{ 金額/2 }<br/>divTight</p>
+  <p>{ (金額 / 2) + f(価格 / 3) }<br/>divNested</p>
+  <p>{ \`\${金額 / 2}\` }<br/>divTemplate</p>
+  <p>{ ok ? 5. / 2 : 1 }<br/>divTernary</p>
+  <p>{ a && /x/ }<br/>divNoRegex</p>
+  <button @click={ save(5. / 2) }><br/>divHandler</button>
+</puzzle-view>
+<script>
+  const re = /a\\/b/g; // scriptRegex
+</script>`);
+    for (const needle of ['divAccent', 'divCjk', 'divIf', 'divDotNumber', 'divOf', 'divAttribute', 'divMember', 'divAstral', 'divEmoji', 'divTight', 'divNested', 'divTemplate', 'divTernary', 'divNoRegex', 'divHandler']) {
+        const entry = lineWith(division, needle);
+        const expression = entry.line.slice(0, entry.line.indexOf('<br/>'));
+        const slashes = [...expression.matchAll(/\//g)].filter(m => expression[m.index - 1] !== '<');
+        assert(slashes.length > 0, `${needle}: no division in the line`);
+        for (const slash of slashes) {
+            const token = entry.tokens.find(t => t.startIndex <= slash.index && slash.index < t.endIndex);
+            assert(token.scopes.includes(DIVIDE), `${needle}: / missing ${DIVIDE}\nScopes: ${token.scopes.join(' ')}`);
+        }
+        assert(
+            !entry.tokens.some(token => token.scopes.includes(REGEXP)),
+            `${needle}: a template expression never holds a regex: ${entry.line}`
+        );
+        assertNoScope(entry, needle, 'source.js.embedded.puzzle');
+    }
+    const scriptRegex = lineWith(division, 'scriptRegex');
+    assertScope(scriptRegex, 'a\\/b', REGEXP);
+    assertScope(scriptRegex, '/g', REGEXP);
+    assertNoScope(scriptRegex, 'scriptRegex', REGEXP);
+
     // ---------------------------------------------------------------------
     // Conformance: every VALID case of puzzle-lang's expressions-parse.json
     // tokenizes with no invalid scope, in text, in a brace-only attribute and
