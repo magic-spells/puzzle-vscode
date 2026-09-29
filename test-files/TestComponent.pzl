@@ -1,7 +1,7 @@
 <puzzle-view class="test-component {#if active}is-active{/if}">
   <!-- Puzzle expressions in comments stay comments: {#if ignored}{/if} -->
   <header style="background:{ headerColor }; transform:translateX({ offset }px)">
-    <h1>{ title | trim | capitalize }</h1>
+    <h1>{ capitalize(title.trim()) }</h1>
   </header>
 
   {#if loading}
@@ -45,12 +45,12 @@
   {#commentary}
 
   <Card>
-    <Slot name="header"><h2>{ title | capitalize }</h2></Slot>
+    <Slot name="header"><h2>{ capitalize(title) }</h2></Slot>
     <Children>
       {#if items.length}<ItemCard item={ items[0] } />{:else}<p>Fallback body</p>{/if}
     </Children>
   </Card>
-  <Slot>{ offset | number } remaining{#svg 'icons/empty.svg'}</Slot>
+  <Slot>{ compact_number(offset) } remaining{#svg 'icons/empty.svg'}</Slot>
   <Children/>
   <Slot name="footer"/>
 
@@ -84,7 +84,7 @@
   <button @click:outside={ close() }>Close</button>
 
   {#raw}
-    Inert braces: { notInterpolated } plus {#if never}branchless{/if} plus { pipes | notAFormatter }
+    Inert braces: { notInterpolated } plus {#if never}branchless{/if} plus { pipes | notAFunction(this) }
     <b class="bold">structural html</b> and <Slot/> and <Portal>plain tag</Portal>
     <Card ref="literalRef" island key="literalKey" flip>markers are plain here</Card>
     <button @click={ notAnEvent }>inert binding</button>

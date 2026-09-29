@@ -74,7 +74,8 @@
     "watch": "tsc -watch -p ./",
     "lint": "tsc -p ./ --noEmit",
     "test:grammar": "node test/grammar.test.js",
-    "test": "npm run compile && npm run test:grammar"
+    "test:library": "node test/library.test.js",
+    "test": "npm run compile && npm run test:grammar && npm run test:library"
   },
   "devDependencies": {
     "@types/node": "16.x",

@@ -1,55 +1,5 @@
 import * as vscode from 'vscode';
-
-// The Puzzle 0.8.0 standard formatter set (D174) plus the browser-only
-// built-ins and the i18n `t` (D175). Completion hints only: a formatter
-// name is never a grammar keyword, and apps register their own.
-const FORMATTERS = [
-    // numbers
-    'abs',
-    'ceil',
-    'floor',
-    'plus',
-    'minus',
-    'times',
-    'divided_by',
-    'modulo',
-    'round',
-    'currency',
-    'percentage',
-    'number_with_delimiter',
-    'compact_number',
-    // text
-    'downcase',
-    'upcase',
-    'capitalize',
-    'trim',
-    'strip',
-    'truncate',
-    'replace',
-    'split',
-    'strip_html',
-    'strip_newlines',
-    'pluralize',
-    // markup
-    'escape',
-    'raw',
-    'newline_to_br',
-    // values
-    'default',
-    'size',
-    'join',
-    'json',
-    // dates
-    'date',
-    'time',
-    'datetime',
-    // browser-only built-ins
-    'link',
-    'timeago',
-    'in_timezone',
-    // translations: registered by the i18n service (D175)
-    't'
-];
+import { LIBRARY, LibraryFunction, insideLibraryContext } from './library';
 
 const EVENTS = [
     'click',
@@ -89,8 +39,7 @@ export function activate(context: vscode.ExtensionContext): void {
             { provideCompletionItems },
             '#',
             ':',
-            '@',
-            '|'
+            '@'
         )
     );
 }
@@ -162,7 +111,7 @@ function provideCompletionItems(
             snippet(
                 'raw',
                 'raw}\n\t${1:literal text — braces are inert}\n{/raw}',
-                'Insert a raw block: no interpolation, directives, formatters, or event bindings'
+                'Insert a raw block: no interpolation, directives, or event bindings'
             )
         ];
     }
@@ -183,13 +132,25 @@ function provideCompletionItems(
         return EVENTS.map(event => snippet(event, `${event}={ \${1:handler} }`, `Bind the ${event} event`));
     }
 
-    // A single `|` opens a formatter; `||` is logical OR.
-    if (/(?:^|[^|])\|\s*$/.test(prefix)) {
-        return FORMATTERS.map(formatter => completion(formatter, vscode.CompletionItemKind.Function, 'Puzzle formatter'));
+    // A bare name inside a template expression can be a library call. A name
+    // after `.` is a member or a method, never a library function, and an
+    // @event value calls a view handler, so the library is not offered there.
+    const upToCursor = document.getText(new vscode.Range(new vscode.Position(0, 0), position));
+    if (!/\.\s*[$\w]*$/.test(prefix) && insideLibraryContext(upToCursor)) {
+        return LIBRARY.map(libraryCompletion);
     }
 
     return [];
 }
+
+function libraryCompletion(fn: LibraryFunction): vscode.CompletionItem {
+    const item = new vscode.CompletionItem(fn.name, vscode.CompletionItemKind.Function);
+    item.detail = fn.signature;
+    item.documentation = new vscode.MarkdownString(fn.documentation);
+    item.insertText = new vscode.SnippetString(fn.insert);
+    return item;
+}
+
 
 function completion(
     label: string,

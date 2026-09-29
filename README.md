@@ -1,8 +1,8 @@
 # Puzzle for Visual Studio Code
 
 Language support for Puzzle single-file components (`.pzl`). The extension is
-kept in sync with the current Puzzle compiler grammar rather than older
-Svelte-style aliases.
+kept in sync with the current Puzzle compiler grammar rather than legacy
+aliases.
 
 ## Features
 
@@ -10,9 +10,12 @@ Svelte-style aliases.
 - JavaScript in `<script>` and TypeScript in `<script lang="ts">`
 - CSS in `<style>` and `<style scoped>`
 - CSS plus Puzzle expressions inside inline `style="..."` attributes
-- JavaScript expressions in interpolations, directives, and dynamic attributes
-- Distinct component, event/action, modifier, formatter, and range scopes
-- Snippets and lightweight completions for current Puzzle constructs
+- Template expressions in interpolations, directives, and dynamic attributes,
+  highlighted with the JavaScript grammar
+- Distinct component, event/action, modifier, library-function, and range
+  scopes
+- Snippets and lightweight completions for current Puzzle constructs,
+  including the function library as call snippets
 - `Puzzle: Insert Component Template` command
 
 HTML comments suppress Puzzle expressions, so documentation such as
@@ -38,7 +41,7 @@ HTML comments suppress Puzzle expressions, so documentation such as
   {/for}
 
   {#for 1...4, n}<span>{ n }</span>{/for}
-  <p>{ title | trim | capitalize }</p>
+  <p>{ capitalize(title.trim()) } · { currency(album.price) }</p>
 </puzzle-view>
 
 <puzzle-skeleton min-duration="250">
@@ -68,16 +71,41 @@ export default class AlbumView extends PuzzleView {
 
 The grammar tracks the **Puzzle 0.8.0** template grammar and recognizes:
 
-- `{ expression }` and formatter chains (`| formatter(args)`) in every value
-  position (0.8.0): text, quoted and brace-only attribute values
-  (`title={ price | currency }`), component props and marker arguments, and the
-  `{#if}`, `{:else if}`, `{#unless}` and `{#case}` headers, inline attribute
-  `{#if}`s included. Only a top-level single `|` is a pipe — `||` stays logical
-  OR, a parenthesized `(a | b)` stays bitwise, and `@event` handler bodies are
-  plain JavaScript. A pipe not followed by a formatter name (`| 0`, `|=`), or
-  any pipe in a `{#for}` header or a `{:when}` value, is marked invalid
-- Object literals as call and formatter arguments (0.8.0) —
-  `{ 'greeting' | t({ name: user.name }) }`, `@click={ save({ id: todo.id }) }`
+- Template expressions as JavaScript expressions (D176): paths, literals,
+  operators, `??` and `?.`, template literals, object and array literals,
+  methods (`{ name.trim().toUpperCase() }`, `{#if items.length}`) and arrow
+  functions as call arguments (`{#for t in todos.filter(t => !t.done)}`),
+  highlighted with the JavaScript grammar
+- The Puzzle function library, called bare (`{ currency(price) }`,
+  `{ truncate(post.body, 120) }`, `{ date(d, 'short') }`,
+  `{ t('cart.count', { count: n }) }`): `round`, `currency`, `percentage`,
+  `number_with_delimiter`, `compact_number`, `pluralize`, `capitalize`,
+  `truncate`, `strip_html`, `strip_newlines`, `escape`, `raw`,
+  `newline_to_br`, `json`, `date`, `time`, `datetime`, `in_timezone`, `t`,
+  `link` and `timeago` carry `support.function.library.puzzle`. A method with
+  the same name (`x.date()`) does not. Library completions are offered in
+  every template expression except an `@event` value
+- `@event` values as plain calls: a handler is a call to one of the view's
+  methods with data arguments (`@click={ select(item.id) }`,
+  `@input={ setName(event.target.value) }`, or a ternary choosing between two
+  handlers). The handler's name and everything in its arguments highlight as
+  ordinary JavaScript (`entity.name.function.js`), with no library scope and
+  no markup-function rule, even when a name matches a library function
+- No `|` in a template expression: there is no pipe and no bitwise OR, so a
+  single `|` anywhere in an interpolation, attribute value, prop, marker
+  argument, block header or `@event` handler is marked invalid. `||` is
+  logical OR, and a `|` inside a string or template-literal text is text
+- No `this` in a template expression, `@event` handlers included: every value comes
+  through `data()`. A member named `this` (`x.this`) and an object key are
+  ordinary names
+- `raw(html)` and `newline_to_br(text)` only as the whole (outermost call) of
+  a text interpolation (`{ raw(post.bodyHtml) }`). Nested in another call, or
+  anywhere in an attribute value, component prop, marker argument, `key=`,
+  `flip=` or block header, the name is marked invalid. `@event` values never
+  get this rule
+- The other expression rules (the method table, the excluded operators such
+  as `**`, `new` and `typeof`, the global namespaces) are the compiler's; the
+  grammar does not flag them
 - `{#if}`, `{:else if}`, `{:else}`, `{/if}`
 - `{#unless}` and `{/unless}`
 - `{#for item in items, index}` and `{#for from...to, value}` (the two forms
@@ -90,9 +118,14 @@ The grammar tracks the **Puzzle 0.8.0** template grammar and recognizes:
 - `{#svg 'path/to/icon.svg'}` (void — it takes no closer)
 - `{#comment}` blocks and `{## inline notes }`
 - `{#raw}…{/raw}`, where braces are literal bytes — no interpolation, block
-  tags, formatter pipes, or event bindings — while HTML stays structural.
+  tags, or event bindings — while HTML stays structural.
   Content after the keyword is ignored (`{#raw json}`) and the closer tolerates
-  whitespace (`{/ raw }`).
+  whitespace (`{/ raw }`). The body is one opaque span, so a literal
+  `</puzzle-view>`, `</puzzle-skeleton>` or `</script>` inside it ends neither
+  the block nor the section.
+- HTML void elements (`area base br col embed hr img input link meta source
+  track wbr`) with or without the slash: `<br>`, `<br/>` and
+  `<input value={ x } readonly>` are whole elements
 - `@event={ expression }` and colon modifiers such as
   `@keydown:enter:prevent={ submit(event) }`, including `@click:outside`
 - The directive attributes `key`, `island`, `ref`, and `flip`
@@ -103,13 +136,16 @@ The grammar tracks the **Puzzle 0.8.0** template grammar and recognizes:
 - Marker arguments (D166): a brace-valued attribute on `<Children>` or `<Slot>`
   other than `name` is a per-stamp argument, and highlights as embedded
   JavaScript — `<Slot name="row" user={ user }>fallback</Slot>`
-- Capitalized component tags and ordinary HTML tags, including dotted
-  component-family member paths such as `<Frame.Wrapper>` (D167)
+- Component tags and ordinary HTML tags, including dotted component-family
+  member paths such as `<Frame.Wrapper>` (D167). A tag is a component when its
+  first character is anything but an ASCII lowercase letter, so `<Übersicht>`,
+  `<概要>` and `<_x>` are components and `<straße-karte>` is an element
 
 Legacy `{#each}`, `{:elsif}`, dotted event modifiers such as `@click.prevent`,
 and lowercase markers such as `<slot>` or `<children>` are intentionally marked
 invalid because the Puzzle compiler does not accept them. `{#raw}` inside an
-attribute value is flagged for the same reason.
+attribute value is flagged for the same reason, and so is a void element's
+closing tag (`</br>`, `</input>`), which the compiler rejects.
 
 ## Development
 
@@ -117,6 +153,12 @@ attribute value is flagged for the same reason.
 npm install
 npm test
 ```
+
+`npm test` compiles the extension, runs the grammar tests (including every
+valid case of Puzzle's `expressions-parse.json` conformance table, copied to
+`test/fixtures/`, which must tokenize with no invalid scope) and the
+completion tests. Set `PUZZLE_CONFORMANCE` to test against another copy of the
+table.
 
 Press `F5` from VS Code to launch an Extension Development Host. The grammar
 test uses VS Code's own HTML, JavaScript, TypeScript, and CSS grammars; set
@@ -136,9 +178,14 @@ standard installation location.
 | Event/action sigil (`@`) | `keyword.operator.event.puzzle` |
 | Event/action name | `support.function.event.puzzle` |
 | Event modifier | `storage.modifier.event.puzzle` |
-| Formatter | `variable.function.formatter.puzzle` |
-| Formatter pipe | `keyword.operator.formatter.puzzle` |
+| Library function call | `support.function.library.puzzle` |
+| Template expression | `meta.embedded.expression.puzzle` |
+| `@event` handler value | `meta.embedded.handler.puzzle` |
 | Range operator | `keyword.operator.range.puzzle` |
+| `\|` in an expression | `invalid.illegal.pipe.puzzle` |
+| `this` in an expression | `invalid.illegal.this.puzzle` |
+| Misplaced `raw` / `newline_to_br` | `invalid.illegal.markup-function.puzzle` |
+| Void element closing tag (`</br>`) | `invalid.illegal.void-close-tag.puzzle` |
 | Invalid legacy syntax | `invalid.illegal.*.puzzle` |
 
 ## Intentional limits

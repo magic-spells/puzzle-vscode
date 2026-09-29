@@ -19,6 +19,24 @@
         { "include": "#puzzle-directives" },
         { "include": "#puzzle-interpolation" }
       ]
+    },
+    "L:meta.embedded.expression.puzzle -comment -string.quoted.single.js -string.quoted.double.js -string.regexp.js -(string.template.js -meta.embedded.line.js)": {
+      "comment": "Template expressions (D176). These rules reach into every nested JavaScript construct of an expression (parentheses, call arguments, arrays, object literals, arrow bodies, template substitutions) but not into string or template-literal text or comments.",
+      "patterns": [
+        { "include": "#expression-division" },
+        { "include": "#expression-invalid-pipe" },
+        { "include": "#expression-invalid-this" },
+        { "include": "#expression-invalid-markup-call" },
+        { "include": "#library-function" }
+      ]
+    },
+    "L:meta.embedded.handler.puzzle -comment -string.quoted.single.js -string.quoted.double.js -string.regexp.js -(string.template.js -meta.embedded.line.js)": {
+      "comment": "An @event value is a call to one of the view's handlers with data arguments. It highlights as plain JavaScript: no library-function scope and no markup-function rule, for the handler's name or anything in its arguments. Only the two compile errors every expression position shares apply, and, as in every expression, a `/` is division.",
+      "patterns": [
+        { "include": "#expression-division" },
+        { "include": "#expression-invalid-pipe" },
+        { "include": "#expression-invalid-this" }
+      ]
     }
   },
   "repository": {
@@ -137,6 +155,7 @@
         { "include": "#puzzle-comment-inline" },
         { "include": "#puzzle-comment-block" },
         { "include": "#puzzle-directives" },
+        { "include": "#markup-interpolation" },
         { "include": "#puzzle-interpolation" },
         { "include": "#marker-element" },
         { "include": "#marker-close-tag" },
@@ -145,6 +164,7 @@
         { "include": "#component-element" },
         { "include": "#html-element" },
         { "include": "#component-close-tag" },
+        { "include": "#void-close-tag" },
         { "include": "#html-close-tag" },
         { "include": "text.html.basic#doctype" },
         { "include": "text.html.basic#entities" }
@@ -202,7 +222,8 @@
     },
 
     "component-element": {
-      "begin": "(<)([A-Z][A-Za-z0-9_]*(?:\\.[A-Za-z_][A-Za-z0-9_]*)*)\\b",
+      "comment": "A tag is a component when its first character is anything but an ASCII lowercase letter (D167): <Card>, <Übersicht>, <概要>, <_x>. The name is Ident('.'Ident)*, each segment a $-free JavaScript identifier, so <Frame.Übersicht> is a family member. A tag starting with a-z is an element, and may carry non-ASCII after that start (<straße-karte>).",
+      "begin": "(<)((?![a-z])[_\\p{ID_Start}][\\p{ID_Continue}\\x{200C}\\x{200D}]*(?:\\.[_\\p{ID_Start}][\\p{ID_Continue}\\x{200C}\\x{200D}]*)*)\\b",
       "beginCaptures": {
         "1": { "name": "punctuation.definition.tag.begin.html" },
         "2": { "name": "entity.name.tag.component.puzzle" }
@@ -218,7 +239,7 @@
     },
 
     "html-element": {
-      "begin": "(<)([a-z][A-Za-z0-9:-]*)\\b",
+      "begin": "(<)([a-z](?:[A-Za-z0-9:-]|[\\p{ID_Continue}\\x{200C}\\x{200D}&&[^\\x00-\\x7F]])*)\\b",
       "beginCaptures": {
         "1": { "name": "punctuation.definition.tag.begin.html" },
         "2": { "name": "entity.name.tag.html" }
@@ -234,7 +255,7 @@
     },
 
     "component-close-tag": {
-      "match": "(</)([A-Z][A-Za-z0-9_]*(?:\\.[A-Za-z_][A-Za-z0-9_]*)*)(>)",
+      "match": "(</)((?![a-z])[_\\p{ID_Start}][\\p{ID_Continue}\\x{200C}\\x{200D}]*(?:\\.[_\\p{ID_Start}][\\p{ID_Continue}\\x{200C}\\x{200D}]*)*)(>)",
       "captures": {
         "1": { "name": "punctuation.definition.tag.begin.html" },
         "2": { "name": "entity.name.tag.component.puzzle" },
@@ -242,8 +263,19 @@
       }
     },
 
+    "void-close-tag": {
+      "comment": "HTML void elements have no closing tag: <br>, <br/> and <input …> are whole elements, and a </br> or </input> is a compile error. Exact lowercase names only; <Input> is a component.",
+      "match": "(</)(area|base|br|col|embed|hr|img|input|link|meta|source|track|wbr)\\s*(>)",
+      "name": "invalid.illegal.void-close-tag.puzzle",
+      "captures": {
+        "1": { "name": "punctuation.definition.tag.begin.html" },
+        "2": { "name": "entity.name.tag.html" },
+        "3": { "name": "punctuation.definition.tag.end.html" }
+      }
+    },
+
     "html-close-tag": {
-      "match": "(</)([a-z][A-Za-z0-9:-]*)(>)",
+      "match": "(</)([a-z](?:[A-Za-z0-9:-]|[\\p{ID_Continue}\\x{200C}\\x{200D}&&[^\\x00-\\x7F]])*)(>)",
       "captures": {
         "1": { "name": "punctuation.definition.tag.begin.html" },
         "2": { "name": "entity.name.tag.html" },
@@ -381,7 +413,7 @@
       "endCaptures": {
         "0": { "name": "punctuation.section.embedded.end.puzzle" }
       },
-      "contentName": "source.js.embedded.puzzle",
+      "contentName": "meta.embedded.handler.puzzle source.js.embedded.puzzle",
       "patterns": [
         { "include": "#javascript-expression" }
       ]
@@ -400,7 +432,7 @@
       "endCaptures": {
         "0": { "name": "punctuation.section.embedded.end.puzzle" }
       },
-      "contentName": "source.js.embedded.puzzle",
+      "contentName": "meta.embedded.handler.puzzle source.js.embedded.puzzle",
       "patterns": [
         { "include": "#javascript-expression" }
       ]
@@ -419,7 +451,7 @@
       "endCaptures": {
         "0": { "name": "punctuation.section.embedded.end.puzzle" }
       },
-      "contentName": "source.js.embedded.puzzle",
+      "contentName": "meta.embedded.handler.puzzle source.js.embedded.puzzle",
       "patterns": [
         { "include": "#javascript-expression" }
       ]
@@ -455,10 +487,8 @@
       "endCaptures": {
         "0": { "name": "punctuation.section.embedded.end.puzzle" }
       },
-      "contentName": "source.js.embedded.puzzle",
+      "contentName": "meta.embedded.expression.puzzle source.js.embedded.puzzle",
       "patterns": [
-        { "include": "#formatter" },
-        { "include": "#invalid-pipe" },
         { "include": "#javascript-expression" }
       ]
     },
@@ -488,7 +518,7 @@
       "endCaptures": {
         "0": { "name": "punctuation.section.embedded.end.puzzle" }
       },
-      "contentName": "source.js.embedded.puzzle",
+      "contentName": "meta.embedded.expression.puzzle source.js.embedded.puzzle",
       "patterns": [
         { "include": "#javascript-expression" }
       ]
@@ -552,10 +582,8 @@
       "endCaptures": {
         "0": { "name": "punctuation.section.embedded.end.puzzle" }
       },
-      "contentName": "source.js.embedded.puzzle",
+      "contentName": "meta.embedded.expression.puzzle source.js.embedded.puzzle",
       "patterns": [
-        { "include": "#formatter" },
-        { "include": "#invalid-pipe" },
         { "include": "#javascript-expression" }
       ]
     },
@@ -627,10 +655,8 @@
       "endCaptures": {
         "0": { "name": "punctuation.section.embedded.end.puzzle" }
       },
-      "contentName": "source.js.embedded.puzzle",
+      "contentName": "meta.embedded.expression.puzzle source.js.embedded.puzzle",
       "patterns": [
-        { "include": "#formatter" },
-        { "include": "#invalid-pipe" },
         { "include": "#javascript-expression" }
       ]
     },
@@ -646,11 +672,10 @@
       "endCaptures": {
         "0": { "name": "punctuation.section.embedded.end.puzzle" }
       },
-      "contentName": "source.js.embedded.puzzle",
+      "contentName": "meta.embedded.expression.puzzle source.js.embedded.puzzle",
       "patterns": [
         { "include": "#range-number-left" },
         { "include": "#range-operator" },
-        { "include": "#invalid-pipe" },
         { "include": "#javascript-expression" }
       ]
     },
@@ -691,13 +716,14 @@
       "contentName": "meta.raw.puzzle",
       "patterns": [
         { "include": "#html-comment" },
+        { "include": "#void-close-tag" },
         { "include": "#raw-close-tag" },
         { "include": "#raw-element" }
       ]
     },
 
     "raw-element": {
-      "begin": "(<)([A-Za-z][A-Za-z0-9:_-]*)",
+      "begin": "(<)((?:[A-Za-z]|[\\p{ID_Start}&&[^\\x00-\\x7F]])(?:[A-Za-z0-9:_-]|[\\p{ID_Continue}\\x{200C}\\x{200D}&&[^\\x00-\\x7F]])*)",
       "beginCaptures": {
         "1": { "name": "punctuation.definition.tag.begin.html" },
         "2": { "name": "entity.name.tag.html" }
@@ -713,7 +739,7 @@
     },
 
     "raw-close-tag": {
-      "match": "(</)([A-Za-z][A-Za-z0-9:_-]*)(>)",
+      "match": "(</)((?:[A-Za-z]|[\\p{ID_Start}&&[^\\x00-\\x7F]])(?:[A-Za-z0-9:_-]|[\\p{ID_Continue}\\x{200C}\\x{200D}&&[^\\x00-\\x7F]])*)(>)",
       "captures": {
         "1": { "name": "punctuation.definition.tag.begin.html" },
         "2": { "name": "entity.name.tag.html" },
@@ -798,10 +824,8 @@
       "endCaptures": {
         "0": { "name": "punctuation.section.embedded.end.puzzle" }
       },
-      "contentName": "source.js.embedded.puzzle",
+      "contentName": "meta.embedded.expression.puzzle source.js.embedded.puzzle",
       "patterns": [
-        { "include": "#formatter" },
-        { "include": "#invalid-pipe" },
         { "include": "#javascript-expression" }
       ]
     },
@@ -817,9 +841,8 @@
       "endCaptures": {
         "0": { "name": "punctuation.section.embedded.end.puzzle" }
       },
-      "contentName": "source.js.embedded.puzzle",
+      "contentName": "meta.embedded.expression.puzzle source.js.embedded.puzzle",
       "patterns": [
-        { "include": "#invalid-pipe" },
         { "include": "#javascript-expression" }
       ]
     },
@@ -863,35 +886,71 @@
       "endCaptures": {
         "0": { "name": "punctuation.section.embedded.end.puzzle" }
       },
-      "contentName": "meta.interpolation.puzzle source.js.embedded.puzzle",
+      "contentName": "meta.interpolation.puzzle meta.embedded.expression.puzzle source.js.embedded.puzzle",
       "patterns": [
-        { "include": "#formatter" },
-        { "include": "#invalid-pipe" },
         { "include": "#javascript-expression" }
       ]
     },
 
-    "formatter": {
-      "comment": "A formatter pipe in any value position (D173 V1): `| name` or `| name(args)`, name = [A-Za-z_$][A-Za-z0-9_$-]*. `||` is logical OR. A pipe that ends a line is a chain continued on the next line.",
+    "markup-interpolation": {
+      "comment": "A text interpolation whose outermost call is `raw(…)` or `newline_to_br(…)` (D176 §4): the one place those two functions may appear. The begin match claims the name, so any other `raw(`/`newline_to_br(` (nested in text, or anywhere in an attribute value, prop, marker argument, key/flip or block header) reaches #expression-invalid-markup-call instead. An @event value never reaches it. Only included in template text, never in attribute contexts.",
+      "begin": "(\\{)(?![#:/])\\s*(raw|newline_to_br)(?=\\s*\\()",
+      "beginCaptures": {
+        "1": { "name": "punctuation.section.embedded.begin.puzzle" },
+        "2": { "name": "meta.interpolation.puzzle meta.embedded.expression.puzzle source.js.embedded.puzzle support.function.library.puzzle" }
+      },
+      "end": "\\}",
+      "endCaptures": {
+        "0": { "name": "punctuation.section.embedded.end.puzzle" }
+      },
+      "contentName": "meta.interpolation.puzzle meta.embedded.expression.puzzle source.js.embedded.puzzle",
+      "patterns": [
+        { "include": "#javascript-expression" }
+      ]
+    },
+
+    "expression-division": {
+      "comment": "A template expression has no regex literals (D176), so every `/` in one is division. JavaScript's regex rule guesses from the character before the `/`, and its identifier test is ASCII-only: after an emoji name or a trailing-dot number (`5. / 2`) it would open a regex that runs to the next `/>` on the line. This rule claims the `/`, with any whitespace before it (where the regex rule can begin), ahead of that guess. Block comments on the same line before the `/` are claimed with it: JavaScript reads `a /* c */ / 2` with a begin/end rule that ends on that `/`, and taking the `/` from inside it would leave the rule open past the closing brace. `//` and `/*` are otherwise left to the comment rules, and `/>` (never division: no operand starts with `>`) to the JSX tag a stray `<br/>` in an expression opens, which ends on it.",
+      "match": "\\s*((?:/\\*(?:[^*]|\\*(?!/))*\\*/\\s*)*)(/)(?![/*>])",
+      "captures": {
+        "1": { "patterns": [{ "include": "source.js#comment" }] },
+        "2": { "name": "keyword.operator.arithmetic.js" }
+      }
+    },
+
+    "expression-invalid-pipe": {
+      "comment": "There is no `|` in a template expression (D176 §1): no formatter pipe and no bitwise OR. A single `|` anywhere in one is a compile error; `||` is logical OR.",
+      "match": "(?<!\\|)\\|(?!\\|)",
+      "name": "invalid.illegal.pipe.puzzle"
+    },
+
+    "expression-invalid-this": {
+      "comment": "`this` is not a template identifier (D176 §7), @event handlers included. A member named `this` (`x.this`, `x?.this`) and an object key (`{ this: 1 }`) are ordinary names.",
       "patterns": [
         {
-          "match": "(?<!\\|)(\\|)(?![|=])\\s*([_$A-Za-z][_$A-Za-z0-9-]*)(?=\\s*(?:\\(|\\||\\}|$))",
-          "captures": {
-            "1": { "name": "keyword.operator.formatter.puzzle" },
-            "2": { "name": "variable.function.formatter.puzzle" }
-          }
+          "match": "(?<![.$\\w])this(?![$\\w])(?!\\s*:)",
+          "name": "invalid.illegal.this.puzzle"
         },
         {
-          "match": "(?<!\\|)\\|(?![|=])(?=\\s*$)",
-          "name": "keyword.operator.formatter.puzzle"
+          "comment": "`a ? this : b`: the `:` belongs to the conditional, not to an object key.",
+          "match": "(?<=\\?)\\s*(this)(?![$\\w])(?=\\s*:)",
+          "captures": {
+            "1": { "name": "invalid.illegal.this.puzzle" }
+          }
         }
       ]
     },
 
-    "invalid-pipe": {
-      "comment": "A top-level single | in a value position must be followed by a formatter name (D173 V1); anything else — `| 0`, `|= 2`, a pipe in a {#for} header or a {:when} value — is a compile error. `||` stays logical OR, and a | nested in (), [] or {} is left to the JavaScript grammar.",
-      "match": "(?<!\\|)\\|(?!\\|)",
-      "name": "invalid.illegal.formatter-pipe.puzzle"
+    "expression-invalid-markup-call": {
+      "comment": "`raw(…)` and `newline_to_br(…)` may only be the whole of a text interpolation (#markup-interpolation). Called anywhere else in a template expression, the name is a compile error. @event values are plain JavaScript and never see this rule.",
+      "match": "(?<![.$\\w])(?:raw|newline_to_br)(?![$\\w])(?=\\s*\\()",
+      "name": "invalid.illegal.markup-function.puzzle"
+    },
+
+    "library-function": {
+      "comment": "A bare call to a function from the Puzzle library (D176 §4): the 19 standard functions plus PuzzleKit's `link` and `timeago`. `raw` and `newline_to_br` are scoped by #markup-interpolation. Not applied in an @event value, whose calls are plain calls. A method (`x.date()`) is not a library call.",
+      "match": "(?<![.$\\w])(?:round|currency|percentage|number_with_delimiter|compact_number|pluralize|capitalize|truncate|strip_html|strip_newlines|escape|json|datetime|date|time|in_timezone|timeago|link|t)(?![$\\w])(?=\\s*\\()",
+      "name": "support.function.library.puzzle"
     },
 
     "range-number-left": {

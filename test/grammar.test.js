@@ -116,7 +116,8 @@ async function main() {
     assertNoScope(lineWith(tokens, 'expressions in comments'), 'ignored', 'source.js.embedded.puzzle');
     assertScope(lineWith(tokens, 'background:'), 'background', 'support.type.property-name.css');
     assertScope(lineWith(tokens, 'background:'), 'headerColor', 'source.js.embedded.puzzle');
-    assertScope(lineWith(tokens, '| trim'), 'trim', 'variable.function.formatter.puzzle');
+    assertScope(lineWith(tokens, 'capitalize(title.trim())'), 'capitalize', 'support.function.library.puzzle');
+    assertScope(lineWith(tokens, 'capitalize(title.trim())'), 'trim', 'entity.name.function.js');
     assertScope(lineWith(tokens, '<ItemCard'), 'ItemCard', 'entity.name.tag.component.puzzle');
     assertScope(lineWith(tokens, '@play:once'), '@', 'keyword.operator.event.puzzle');
     assertScope(lineWith(tokens, '@play:once'), 'play', 'support.function.event.puzzle');
@@ -170,7 +171,7 @@ async function main() {
     assertScope(namedSlot, 'Slot', 'entity.name.tag.marker.puzzle', 0, 1);
     // Fallback body is live template content, not inert text.
     assertScope(namedSlot, 'title', 'source.js.embedded.puzzle');
-    assertScope(namedSlot, 'capitalize', 'variable.function.formatter.puzzle');
+    assertScope(namedSlot, 'capitalize', 'support.function.library.puzzle');
 
     assertScope(lineWith(tokens, '<Children>'), 'Children', 'entity.name.tag.marker.puzzle');
     assertScope(lineWith(tokens, '</Children>'), 'Children', 'entity.name.tag.marker.puzzle');
@@ -187,7 +188,7 @@ async function main() {
     assertScope(bareSlot, 'Slot', 'entity.name.tag.marker.puzzle');
     assertScope(bareSlot, 'Slot', 'entity.name.tag.marker.puzzle', 0, 1);
     assertScope(bareSlot, 'offset', 'source.js.embedded.puzzle');
-    assertScope(bareSlot, 'number', 'variable.function.formatter.puzzle');
+    assertScope(bareSlot, 'compact_number', 'support.function.library.puzzle');
     assertScope(bareSlot, 'svg', 'support.function.inline-svg.puzzle');
     assertNoScope(bareSlot, 'remaining', 'source.js.embedded.puzzle');
 
@@ -257,6 +258,63 @@ async function main() {
     // markers are exact-match, so <Slot.Custom/> falls through (D167).
     assertScope(lineWith(tokens, '<Slot.Custom/>'), 'Slot.Custom', 'entity.name.tag.component.puzzle');
     assertNoScope(lineWith(tokens, '<Slot.Custom/>'), 'Slot.Custom', 'entity.name.tag.marker.puzzle');
+
+    // A tag is a component when its first character is anything but an ASCII
+    // lowercase letter (D167): identifier letters past ASCII and a leading '_'
+    // count. A tag starting with a-z is an element, non-ASCII after it or not.
+    const COMPONENT = 'entity.name.tag.component.puzzle';
+    const ELEMENT = 'entity.name.tag.html';
+    const unicodeTags = tokenize(grammar, `<puzzle-view>
+  <Übersicht/> uA
+  <概要/> uB
+  <Frame.Übersicht/> uC
+  <_foo/> uD
+  <Übersicht title={ x }></Übersicht> uE
+  <概要>body</概要> uF
+  <ärmel/> uG
+  <straße-karte>k</straße-karte> uH
+  <div>d</div> uI
+  <my-élément>e</my-élément> uJ
+  <Frame-x/> uK
+  <Frame:Wrapper/> uL
+  <Frame./> uM
+  <Slot.Foo/> uN
+  <Children/><Slot/><Slot name="row"/> uO
+  under <$50 uP
+</puzzle-view>`);
+    const tagLine = marker => lineWith(unicodeTags, marker);
+    for (const [marker, name] of [['uA', 'Übersicht'], ['uB', '概要'], ['uC', 'Frame.Übersicht'], ['uD', '_foo'], ['uG', 'ärmel']]) {
+        assertScope(tagLine(marker), name, COMPONENT);
+        assertScope(tagLine(marker), name, COMPONENT, name.length - 1);
+        assertNoScope(tagLine(marker), name, ELEMENT);
+    }
+    // Opening and closing tags alike, with props on the opening tag.
+    for (const [marker, name] of [['uE', 'Übersicht'], ['uF', '概要']]) {
+        assertScope(tagLine(marker), name, COMPONENT);
+        assertScope(tagLine(marker), name, COMPONENT, name.length - 1, 1);
+    }
+    assertScope(tagLine('uE'), 'title', 'entity.other.attribute-name.html');
+    assertScope(tagLine('uE'), 'x', 'source.js.embedded.puzzle');
+    for (const [marker, name] of [['uH', 'straße-karte'], ['uI', 'div'], ['uJ', 'my-élément']]) {
+        assertScope(tagLine(marker), name, ELEMENT);
+        assertScope(tagLine(marker), name, ELEMENT, name.length - 1);
+        assertScope(tagLine(marker), name, ELEMENT, name.length - 1, 1);
+        assertNoScope(tagLine(marker), name, COMPONENT);
+    }
+    // The D167 name errors keep their ASCII reading: the component scope stops
+    // where the identifier stops, and the grammar does not flag the rest.
+    for (const [marker, rest] of [['uK', '-x'], ['uL', ':Wrapper'], ['uM', './>']]) {
+        assertScope(tagLine(marker), 'Frame', COMPONENT, 4);
+        assertNoScope(tagLine(marker), rest, COMPONENT);
+    }
+    assertScope(tagLine('uN'), 'Slot.Foo', COMPONENT, 7);
+    assertNoScope(tagLine('uN'), 'Slot.Foo', 'entity.name.tag.marker.puzzle');
+    assertScope(tagLine('uO'), 'Children', 'entity.name.tag.marker.puzzle');
+    assertScope(tagLine('uO'), 'Slot', 'entity.name.tag.marker.puzzle');
+    assertScope(tagLine('uO'), 'Slot', 'entity.name.tag.marker.puzzle', 0, 1);
+    // '$' never starts a tag name: `<$50` is text.
+    assertNoScope(tagLine('uP'), '$50', COMPONENT);
+    assertNoScope(tagLine('uP'), '$50', ELEMENT);
 
     // Lowercase markers are compile errors (D134).
     assertScope(lineWith(tokens, '<slot name="nope">'), 'slot', 'invalid.illegal.marker.puzzle');
@@ -340,8 +398,9 @@ async function main() {
     assertNoScope(rawText, 'notInterpolated', 'source.js.embedded.puzzle');
     assertNoScope(rawText, 'branchless', 'source.js.embedded.puzzle');
     assertNoScope(rawText, 'never', 'keyword.control.conditional.puzzle');
-    assertNoScope(rawText, 'notAFormatter', 'variable.function.formatter.puzzle');
-    assertNoScope(rawText, '|', 'keyword.operator.formatter.puzzle');
+    assertNoScope(rawText, 'notAFunction', 'support.function.library.puzzle');
+    assertNoScope(rawText, 'notAFunction', 'source.js.embedded.puzzle');
+    assertNoScope(rawText, '|', 'invalid.illegal.pipe.puzzle');
 
     const rawHtml = lineWith(tokens, 'structural html');
     assertScope(rawHtml, 'b', 'entity.name.tag.html');
@@ -407,7 +466,6 @@ async function main() {
   <button @click.prevent={ go } @click:bogus={ go }></button>
   {:elsif stale}
   { count || fallback }
-  {#if flags | mask}<span>bitwise</span>{/if}
   {#unless done}spaced closer{/ unless }
   {#rawish}
 </puzzle-view>
@@ -420,136 +478,489 @@ const stillJavaScript = true;
     assertScope(lineWith(edgeCases, '@click:bogus'), ':bogus', 'invalid.illegal.event-modifier.puzzle');
     assertScope(lineWith(edgeCases, '{:elsif'), 'elsif', 'invalid.illegal.directive.puzzle');
     assertScope(lineWith(edgeCases, 'count || fallback'), '||', 'keyword.operator.logical.js');
-    assertNoScope(lineWith(edgeCases, 'count || fallback'), '||', 'keyword.operator.formatter.puzzle');
-    // Since 0.8.0 (D173 V1) a top-level `|` in an {#if} header is a formatter
-    // pipe, not a bitwise OR.
-    assertScope(lineWith(edgeCases, 'flags | mask'), '|', 'keyword.operator.formatter.puzzle');
-    assertScope(lineWith(edgeCases, 'flags | mask'), 'mask', 'variable.function.formatter.puzzle');
     assertScope(lineWith(edgeCases, 'stillJavaScript'), 'stillJavaScript', 'source.js.embedded.puzzle');
     // Closers tolerate whitespace.
     assertScope(lineWith(edgeCases, '{/ unless }'), 'unless', 'keyword.control.end.puzzle', 0, 1);
     // A keyword that merely starts with `raw` is not the raw block.
     assertScope(lineWith(edgeCases, '{#rawish}'), 'rawish', 'invalid.illegal.directive.puzzle');
 
-    // 0.8.0 (D173 V1): a formatter chain is legal in every value position —
-    // brace-only attributes, component props and marker arguments, and the
-    // {#if}/{:else if}/{#unless}/{#case} headers, inline attribute ifs included.
-    // `@event` handler bodies are JavaScript, so a pipe there stays bitwise.
-    const valuePipes = tokenize(grammar, `<puzzle-view>
-  <a title={ price | currency } data-or={ a || b }>link</a>
-  <Card total={ n | currency('$', 0) } />
-  <Frame.Wrapper label={ name | truncate(20) } />
-  <Children user={ user | upcase }>{ user.name }</Children>
-  <input key={ id | downcase } value={ name | upcase } />
-  {#if post.tags | size}tagged{:else if draft | blank-ish}draft{/if}
-  {#unless items | size}empty{/unless}
-  {#case status | downcase}{:when 'paid', 'shipped'}ok{/case}
-  <b class="btn {#if tags | size}has-tags{/if}">b</b>
-  <button @click={ a | b } @keyup={ save({ id: todo.id }) }>go</button>
-  { 'greeting' | t({ name: user.name }) } afterText
-  { photo | resize({ height: 480 }) } tailText
-  { fn({ a: 1 }) } plainTail
-  { (flags | mask) } { count || fallback }
-  { w / 2 | 0 } { a |= 2 }
-  {#for item in items | sort}{/for}
-  {#case kind}{:when 'a' | x}bad{/case}
-  { total |
-    currency }
-  <pre>
-    keep   { spaced | trim }   exactly
-  </pre>
-  <textarea>
-  { draft }
-  </textarea>
+    // A {#raw} body is one opaque span, as the compiler's section splitter
+    // reads it: a literal </puzzle-view>, </puzzle-skeleton> or </script>
+    // inside it ends neither the raw block nor the section, and highlighting
+    // after {/raw} is the template's again.
+    const INVALID_VOID = 'invalid.illegal.void-close-tag.puzzle';
+    const rawSections = tokenize(grammar, `<puzzle-view>
+  <pre>{#raw}<puzzle-view>{ sample }</puzzle-view>{/raw}</pre> sameLineTail
+  <pre>{#raw}
+</puzzle-view>
+</puzzle-skeleton>
+</script>
+<script>
+const insideRaw = 1;
+  {/raw}</pre>
+  <p>{ afterRaw }</p>
+</puzzle-view>
+<puzzle-skeleton><pre>{#raw}</puzzle-skeleton>{ skel }{/raw}</pre><i>{ skelLive }</i></puzzle-skeleton>
+<script>
+const realScript = true;
+</script>`);
+    const rawSample = lineWith(rawSections, '{ sample }');
+    assertScope(rawSample, 'sample', 'meta.raw.puzzle');
+    assertNoScope(rawSample, 'sample', 'source.js.embedded.puzzle');
+    assertScope(rawSample, '</puzzle-view>', 'meta.raw.puzzle');
+    assertScope(rawSample, 'sameLineTail', 'meta.template.puzzle');
+    assertNoScope(rawSample, 'sameLineTail', 'meta.raw.puzzle');
+    for (const closer of ['</puzzle-view>', '</puzzle-skeleton>', '</script>']) {
+        const entry = rawSections.find(e => e.line === closer);
+        assertScope(entry, closer, 'meta.raw.puzzle', 2);
+        assertScope(entry, closer, 'meta.template.puzzle', 2);
+    }
+    assertScope(lineWith(rawSections, 'insideRaw'), 'insideRaw', 'meta.raw.puzzle');
+    assertNoScope(lineWith(rawSections, 'insideRaw'), 'insideRaw', 'source.js.embedded.puzzle');
+    const afterRaw = lineWith(rawSections, 'afterRaw');
+    assertScope(afterRaw, 'afterRaw', 'source.js.embedded.puzzle');
+    assertScope(afterRaw, 'afterRaw', 'meta.template.puzzle');
+    assertNoScope(afterRaw, 'afterRaw', 'meta.raw.puzzle');
+    const skeletonRaw = lineWith(rawSections, 'skelLive');
+    assertScope(skeletonRaw, 'skel ', 'meta.raw.puzzle');
+    assertNoScope(skeletonRaw, 'skel ', 'source.js.embedded.puzzle');
+    assertScope(skeletonRaw, 'skelLive', 'source.js.embedded.puzzle');
+    assertScope(skeletonRaw, 'skelLive', 'meta.template.skeleton.puzzle');
+    assertScope(lineWith(rawSections, 'realScript'), 'realScript', 'source.js.embedded.puzzle');
+
+    // HTML void elements need no slash; a void closing tag is an error, in a
+    // raw body too (HTML stays structural there). Exact lowercase names only.
+    const voids = tokenize(grammar, `<puzzle-view>
+  <p>a<br>b<br/>c<br />d<hr><img src="a.png"><wbr></p> <label>Name <input type="text" value={ v } readonly> required</label> voidOpen
+  <input type="text"></input> <p>a<br>b</br></p> </img> </wbr> </hr > voidClose
+  <Input label="x">hint</Input> </brx> </bR> </p> </Br> notVoidClose
+  {#raw}<p>a<br>b</br></p>{/raw} rawVoid
+</puzzle-view>`);
+    const voidOpen = lineWith(voids, 'voidOpen');
+    assert(!voidOpen.tokens.some(t => t.scopes.some(s => s.startsWith('invalid.'))), 'void start tags are legal');
+    assertScope(voidOpen, 'v }', 'source.js.embedded.puzzle');
+    assertScope(voidOpen, 'readonly', 'entity.other.attribute-name.html');
+    assertNoScope(voidOpen, 'required', 'source.js.embedded.puzzle');
+    const voidClose = lineWith(voids, 'voidClose');
+    for (const closer of ['</input>', '</br>', '</img>', '</wbr>', '</hr >']) {
+        assertScope(voidClose, closer, INVALID_VOID, 0);
+        assertScope(voidClose, closer, INVALID_VOID, 2);
+    }
+    assertNoScope(voidClose, '</p>', INVALID_VOID);
+    const notVoidClose = lineWith(voids, 'notVoidClose');
+    assert(!notVoidClose.tokens.some(t => t.scopes.some(s => s.startsWith('invalid.'))), 'non-void closers are legal');
+    assertScope(lineWith(voids, 'rawVoid'), '</br>', INVALID_VOID, 2);
+    assertScope(lineWith(voids, 'rawVoid'), '</br>', 'meta.raw.puzzle', 2);
+
+    // ---------------------------------------------------------------------
+    // The Puzzle 0.8.0 expression language (D176). Template expressions are
+    // JavaScript-shaped and highlight with the JavaScript grammar; the grammar
+    // adds four rules on top and leaves everything else (method-table
+    // membership, the excluded operators, `.size`) to the compiler.
+    // ---------------------------------------------------------------------
+    const PIPE = 'invalid.illegal.pipe.puzzle';
+    const THIS = 'invalid.illegal.this.puzzle';
+    const MARKUP = 'invalid.illegal.markup-function.puzzle';
+    const LIBRARY = 'support.function.library.puzzle';
+
+    // Rule 1: JavaScript expressions. Library calls, methods, arrow functions
+    // as arguments, template literals, object and array literals, `??`, `?.`.
+    const jsShaped = tokenize(grammar, `<puzzle-view>
+  <p>{ currency(price) } { truncate(post.body, 120) } { capitalize(name.trim()) } nestedTail</p>
+  <p>{ t('cart.count', { count: cart.items.length }) } { pluralize(n, 'item') } tTail</p>
+  <p>{ date(d, 'short') } { time(in_timezone(d, zone)) } { datetime(d) } { timeago(d) } dateTail</p>
+  {#for t in todos.filter(t => !t.done)}<i>{ t.title }</i>{/for}
+  {#if items.length}<b>{ items.at(-1).name.toUpperCase() }</b>{/if}
+  <p>{ \`\${first} \${last}\` } { [a, b].join(', ') } { subtitle ?? 'Untitled' } { user?.name } litTail</p>
+  <a href={ link('/posts/' + post.id) } title={ round(ratio, 2) }>{ json(data) }</a>
+  <p>{ x.date() } { currencyish(price) } { my_currency(price) } { $date(x) } { date } notLibrary</p>
+  <p>{ Math.round(x / 2) } { Object.keys(o).length } { Number(x).toFixed(2) } globalsTail</p>
 </puzzle-view>`);
 
-    const attrPipe = lineWith(valuePipes, 'title={ price');
-    assertScope(attrPipe, '|', 'keyword.operator.formatter.puzzle');
-    assertScope(attrPipe, 'currency', 'variable.function.formatter.puzzle');
-    assertScope(attrPipe, '||', 'keyword.operator.logical.js');
-    assertNoScope(attrPipe, '||', 'keyword.operator.formatter.puzzle');
-    assertNoScope(attrPipe, '||', 'invalid.illegal.formatter-pipe.puzzle');
+    const nestedCalls = lineWith(jsShaped, 'nestedTail');
+    assertScope(nestedCalls, 'currency', LIBRARY);
+    assertScope(nestedCalls, 'truncate', LIBRARY);
+    assertScope(nestedCalls, 'capitalize', LIBRARY);
+    assertScope(nestedCalls, 'trim', 'entity.name.function.js');
+    assertNoScope(nestedCalls, 'trim', LIBRARY);
+    assertScope(nestedCalls, '120', 'constant.numeric.decimal.js');
+    assertNoScope(nestedCalls, 'nestedTail', 'source.js.embedded.puzzle');
 
-    const propPipe = lineWith(valuePipes, '<Card total');
-    assertScope(propPipe, '|', 'keyword.operator.formatter.puzzle');
-    assertScope(propPipe, 'currency', 'variable.function.formatter.puzzle');
-    assertScope(propPipe, "'$'", 'string.quoted.single.js');
-    assertScope(lineWith(valuePipes, '<Frame.Wrapper'), 'truncate', 'variable.function.formatter.puzzle');
-    const markerArgPipe = lineWith(valuePipes, '<Children user');
-    assertScope(markerArgPipe, 'Children', 'entity.name.tag.marker.puzzle');
-    assertScope(markerArgPipe, 'upcase', 'variable.function.formatter.puzzle');
-    const directivePipe = lineWith(valuePipes, '<input key');
-    assertScope(directivePipe, 'key', 'keyword.control.directive.puzzle');
-    assertScope(directivePipe, 'downcase', 'variable.function.formatter.puzzle');
-    assertScope(directivePipe, 'upcase', 'variable.function.formatter.puzzle');
+    const tCall = lineWith(jsShaped, 'tTail');
+    assertScope(tCall, 't(', LIBRARY);
+    assertScope(tCall, "'cart.count'", 'string.quoted.single.js');
+    assertScope(tCall, 'count:', 'meta.object-literal.key.js');
+    assertScope(tCall, 'pluralize', LIBRARY);
+    // The object literal closes before the interpolation does.
+    assertNoScope(tCall, 'tTail', 'source.js.embedded.puzzle');
 
-    const ifPipe = lineWith(valuePipes, '{#if post.tags');
-    assertScope(ifPipe, '|', 'keyword.operator.formatter.puzzle');
-    assertScope(ifPipe, 'size', 'variable.function.formatter.puzzle');
-    // Formatter names may carry a dash after the first character.
-    assertScope(ifPipe, 'blank-ish', 'variable.function.formatter.puzzle');
-    assertScope(ifPipe, 'else', 'keyword.control.conditional.else.puzzle');
-    assertScope(lineWith(valuePipes, '{#unless items'), 'size', 'variable.function.formatter.puzzle');
-    assertScope(lineWith(valuePipes, '{#case status'), 'downcase', 'variable.function.formatter.puzzle');
-    assertNoScope(lineWith(valuePipes, '{#case status'), 'shipped', 'invalid.illegal.formatter-pipe.puzzle');
-
-    const inlineIfPipe = lineWith(valuePipes, 'has-tags');
-    assertScope(inlineIfPipe, 'size', 'variable.function.formatter.puzzle');
-    assertScope(inlineIfPipe, 'size', 'string.quoted.double.html');
-    assertNoScope(inlineIfPipe, 'has-tags', 'source.js.embedded.puzzle');
-
-    const handlerPipe = lineWith(valuePipes, '@click={ a | b }');
-    assertScope(handlerPipe, '|', 'keyword.operator.bitwise.js');
-    assertNoScope(handlerPipe, '|', 'keyword.operator.formatter.puzzle');
-    assertNoScope(handlerPipe, '|', 'invalid.illegal.formatter-pipe.puzzle');
-
-    // 0.8.0 (D173 V8): an object literal is legal in argument position. It is
-    // a JavaScript object, not a nested interpolation, and the outer
-    // interpolation still closes at the right brace.
-    for (const needle of ['afterText', 'tailText', 'plainTail']) {
-        const line = lineWith(valuePipes, needle);
-        assertScope(line, '{', 'meta.objectliteral.js', 0, 1);
-        assertNoScope(line, needle, 'source.js.embedded.puzzle');
+    const dates = lineWith(jsShaped, 'dateTail');
+    for (const name of ['date', 'time', 'in_timezone', 'datetime', 'timeago']) {
+        assertScope(dates, `${name}(`, LIBRARY);
     }
-    const tArgs = lineWith(valuePipes, 'afterText');
-    assertScope(tArgs, 't(', 'variable.function.formatter.puzzle');
-    assertScope(tArgs, 'name:', 'meta.object-literal.key.js');
-    assertScope(tArgs, 'user.name', 'meta.objectliteral.js');
-    assertScope(lineWith(valuePipes, 'tailText'), 'resize', 'variable.function.formatter.puzzle');
-    const handlerObject = lineWith(valuePipes, 'save({');
-    assertScope(handlerObject, 'id:', 'meta.object-literal.key.js');
-    assertScope(handlerObject, 'go', 'text.html.puzzle');
-    assertNoScope(handlerObject, 'go', 'source.js.embedded.puzzle');
+    assertScope(dates, "'short'", 'string.quoted.single.js');
 
-    // Only a top-level single `|` is a pipe: parenthesized it is bitwise OR.
-    const nested = lineWith(valuePipes, '(flags | mask)');
-    assertScope(nested, '|', 'keyword.operator.bitwise.js');
-    assertNoScope(nested, '|', 'invalid.illegal.formatter-pipe.puzzle');
-    assertScope(nested, '||', 'keyword.operator.logical.js');
+    const forArrow = lineWith(jsShaped, 'todos.filter');
+    assertScope(forArrow, 'filter', 'entity.name.function.js');
+    assertScope(forArrow, '=>', 'storage.type.function.arrow.js');
+    assertScope(forArrow, 't.title', 'source.js.embedded.puzzle');
+    const methods = lineWith(jsShaped, 'items.at(-1)');
+    assertScope(methods, 'length', 'support.variable.property.js');
+    assertScope(methods, 'toUpperCase', 'entity.name.function.js');
 
-    // What follows a pipe must be a formatter name: `| 0` and `|=` are
-    // compile errors, and so is any pipe in a {#for} header or a {:when} value.
-    const notAName = lineWith(valuePipes, 'w / 2 | 0');
-    assertScope(notAName, '|', 'invalid.illegal.formatter-pipe.puzzle');
-    assertScope(notAName, '|', 'invalid.illegal.formatter-pipe.puzzle', 0, 1);
-    const forPipe = lineWith(valuePipes, '{#for item in items | sort}');
-    assertScope(forPipe, '|', 'invalid.illegal.formatter-pipe.puzzle');
-    assertNoScope(forPipe, 'sort', 'variable.function.formatter.puzzle');
-    const whenPipe = lineWith(valuePipes, "{:when 'a' | x}");
-    assertScope(whenPipe, '|', 'invalid.illegal.formatter-pipe.puzzle');
-    assertNoScope(whenPipe, 'x}', 'variable.function.formatter.puzzle');
+    const literals = lineWith(jsShaped, 'litTail');
+    assertScope(literals, '`', 'string.template.js');
+    assertScope(literals, 'first', 'meta.template.expression.js');
+    assertScope(literals, '[a, b]', 'meta.array.literal.js');
+    assertScope(literals, '??', 'keyword.operator.logical.js');
+    assertScope(literals, '?.', 'punctuation.accessor.optional.js');
+    assertNoScope(literals, 'litTail', 'source.js.embedded.puzzle');
 
-    // A chain may continue on the next line.
-    const eolPipe = lineWith(valuePipes, '{ total |');
-    assertScope(eolPipe, '|', 'keyword.operator.formatter.puzzle');
-    assertNoScope(eolPipe, '|', 'invalid.illegal.formatter-pipe.puzzle');
+    const attrLibrary = lineWith(jsShaped, "link('/posts/'");
+    assertScope(attrLibrary, 'link', LIBRARY);
+    assertScope(attrLibrary, 'round', LIBRARY);
+    assertScope(attrLibrary, 'json', LIBRARY);
 
-    // <pre>/<textarea> bodies keep their whitespace (D173 V10); the grammar
-    // does not collapse or special-case them, and interpolations stay live.
-    const preBody = lineWith(valuePipes, 'keep   {');
-    assertScope(preBody, 'trim', 'variable.function.formatter.puzzle');
-    assertNoScope(preBody, 'exactly', 'source.js.embedded.puzzle');
-    assertScope(lineWith(valuePipes, '{ draft }'), 'draft', 'source.js.embedded.puzzle');
+    // Only a bare call to an exact library name is a library call.
+    const notLibrary = lineWith(jsShaped, 'notLibrary');
+    for (const needle of ['date()', 'currencyish', 'my_currency', '$date', 'date }']) {
+        assertNoScope(notLibrary, needle, LIBRARY);
+    }
+    const globals = lineWith(jsShaped, 'globalsTail');
+    assertScope(globals, 'Math', 'source.js.embedded.puzzle');
+    assertNoScope(globals, 'round', LIBRARY);
+    assertScope(globals, 'toFixed', 'entity.name.function.js');
+
+    // Rule 2: there is no `|` in a template expression — no pipe and no
+    // bitwise OR — in any position. `||` and a `|` inside a string or
+    // template-literal text are not flagged.
+    const pipes = tokenize(grammar, `<puzzle-view>
+  <p>{ price | currency } { f(a | b) } { [a | b] } { ({ k: a | b }).k } textPipes</p>
+  <p>{ items.map(x => x | 1) } { \`\${a | b}\` } substitutionPipe</p>
+  <a title={ a | b } data-x="{ c | d }" style="width:{ w | 0 }px">attrPipes</a>
+  <Card total={ n | currency } /><Slot name="row" item={ a | b }>markerPipe</Slot>
+  <li key={ id | x } flip={ f | g }>keyPipes</li>
+  {#if a | b}x{:else if c | d}y{/if}{#unless e | f}z{/unless}{#case g | h}{:when i | j}w{/case}headerPipes
+  {#for item in items | sort}{/for}<b class="{#if tags | size}t{/if}">forPipe</b>
+  <button @click={ save(a | b) } @input={ flags |= 1 } @blur={ a | b }>handlerPipes</button>
+  { total &&
+    ready | done } multiLinePipe
+  <p>{ a || b } { a ||= b } { 'a | b' } { "c|d" } { \`e | f\` } { \`\${'g|h'}\` } notPipes</p>
+</puzzle-view>
+<script>
+const mask = a | b;
+</script>
+<style>
+.a { content: "|"; }
+</style>`);
+
+    const textPipes = lineWith(pipes, 'textPipes');
+    for (let i = 0; i < 4; i += 1) assertScope(textPipes, '|', PIPE, 0, i);
+    assertNoScope(textPipes, 'currency', LIBRARY);
+    const substitutionPipe = lineWith(pipes, 'substitutionPipe');
+    assertScope(substitutionPipe, '|', PIPE);
+    assertScope(substitutionPipe, '|', PIPE, 0, 1);
+    const attrPipes = lineWith(pipes, 'attrPipes');
+    for (let i = 0; i < 3; i += 1) assertScope(attrPipes, '|', PIPE, 0, i);
+    const markerPipe = lineWith(pipes, 'markerPipe');
+    assertScope(markerPipe, '|', PIPE);
+    assertScope(markerPipe, '|', PIPE, 0, 1);
+    const keyPipes = lineWith(pipes, 'keyPipes');
+    assertScope(keyPipes, '|', PIPE);
+    assertScope(keyPipes, '|', PIPE, 0, 1);
+    const headerPipes = lineWith(pipes, 'headerPipes');
+    for (let i = 0; i < 5; i += 1) assertScope(headerPipes, '|', PIPE, 0, i);
+    const forPipe = lineWith(pipes, 'forPipe');
+    assertScope(forPipe, '|', PIPE);
+    assertScope(forPipe, '|', PIPE, 0, 1);
+    assertNoScope(forPipe, 'forPipe', 'source.js.embedded.puzzle');
+    const handlerPipes = lineWith(pipes, 'handlerPipes');
+    for (let i = 0; i < 3; i += 1) assertScope(handlerPipes, '|', PIPE, 0, i);
+    assertScope(lineWith(pipes, 'ready | done'), '|', PIPE);
+    const notPipes = lineWith(pipes, 'notPipes');
+    assertScope(notPipes, '||', 'keyword.operator.logical.js');
+    assertNoScope(notPipes, '||', PIPE);
+    assertNoScope(notPipes, '||', PIPE, 0, 1);
+    for (const needle of ["'a | b'", '"c|d"', '`e | f`', "'g|h'"]) {
+        assertNoScope(notPipes, needle, PIPE, needle.indexOf('|'));
+    }
+    // <script> and <style> are untouched.
+    assertNoScope(lineWith(pipes, 'const mask'), '|', PIPE);
+    assertNoScope(lineWith(pipes, 'content:'), '|', PIPE);
+    // Plain template text is not an expression.
+    const plainText = tokenize(grammar, '<puzzle-view><p>Home | About</p></puzzle-view>');
+    assertNoScope(plainText[0], '|', PIPE);
+
+    // Rule 3: `this` is not a template identifier, handlers included. A
+    // member named `this` and an object key are ordinary names.
+    const thisTokens = tokenize(grammar, `<puzzle-view>
+  <p>{ this } { this.x } { f(this) } { user.name + this?.y } { (this) } { this[k] } textThis</p>
+  <p class={ this.cls } data-x="{ this.x }">attrThis</p>
+  {#if this.ready}r{/if}{#for i in this.items}{/for}headerThis
+  <button @click={ this.save() } @input={ save(this) } @blur={ save(this.x) }>handlerThis</button>
+  <p>{ a ? this : b } ternaryThis</p>
+  <p>{ a.this } { a?.this } { ({ this: 1 }).this } { thisValue } { $this } { _this } okThis</p>
+</puzzle-view>
+<script>
+this.ready = true;
+</script>`);
+    const textThis = lineWith(thisTokens, 'textThis');
+    for (let i = 0; i < 6; i += 1) assertScope(textThis, 'this', THIS, 0, i);
+    const attrThis = lineWith(thisTokens, 'attrThis');
+    assertScope(attrThis, 'this', THIS);
+    assertScope(attrThis, 'this', THIS, 0, 1);
+    const headerThis = lineWith(thisTokens, 'headerThis');
+    assertScope(headerThis, 'this', THIS);
+    assertScope(headerThis, 'this', THIS, 0, 1);
+    const handlerThis = lineWith(thisTokens, 'handlerThis');
+    for (let i = 0; i < 3; i += 1) assertScope(handlerThis, 'this', THIS, 0, i);
+    assertScope(lineWith(thisTokens, 'ternaryThis'), 'this', THIS);
+    const okThis = lineWith(thisTokens, 'okThis');
+    for (let i = 0; i < 4; i += 1) assertNoScope(okThis, 'this', THIS, 0, i);
+    for (const needle of ['thisValue', '$this', '_this']) assertNoScope(okThis, needle, THIS, needle.indexOf('this'));
+    assertNoScope(lineWith(thisTokens, 'this.ready = true'), 'this', THIS);
+
+    // Rule 4: `raw(…)` and `newline_to_br(…)` only as the whole (outermost
+    // call) of a text interpolation.
+    const markup = tokenize(grammar, `<puzzle-view>
+  <article>{ raw(post.bodyHtml) }</article><p>{newline_to_br(note)} {  raw ( html ) } legalMarkup</p>
+  <p>{ raw(
+    post.bodyHtml) } multiLineRaw</p>
+  <p>{ truncate(raw(html), 20) } { raw(raw(html)) } { strip_html(newline_to_br(note)) } nestedMarkup</p>
+  <a title={ raw(html) } href="{ newline_to_br(x) }" style="color:{ raw(tone) }">attrMarkup</a>
+  <Card body={ raw(html) } /><Slot name="row" item={ newline_to_br(note) }>{ raw(html) } markerMarkup</Slot>
+  <li key={ raw(id) } flip={ newline_to_br(f) }>keyMarkup</li>
+  <p>{ draft || raw } { x.raw(y) } { rawish(y) } { raw_text(y) } { 'raw(x)' } notMarkup</p>
+</puzzle-view>`);
+
+    const legalMarkup = lineWith(markup, 'legalMarkup');
+    assertScope(legalMarkup, 'raw', LIBRARY);
+    assertNoScope(legalMarkup, 'raw', MARKUP);
+    assertScope(legalMarkup, 'raw', 'source.js.embedded.puzzle');
+    assertScope(legalMarkup, 'bodyHtml', 'source.js.embedded.puzzle');
+    assertScope(legalMarkup, 'newline_to_br', LIBRARY);
+    assertScope(legalMarkup, 'raw', LIBRARY, 0, 1);
+    assertNoScope(legalMarkup, 'legalMarkup', 'source.js.embedded.puzzle');
+    assertScope(lineWith(markup, '{ raw('), 'raw', LIBRARY);
+    assertScope(lineWith(markup, 'multiLineRaw'), 'bodyHtml', 'source.js.embedded.puzzle');
+    assertNoScope(lineWith(markup, 'multiLineRaw'), 'multiLineRaw', 'source.js.embedded.puzzle');
+
+    const nestedMarkup = lineWith(markup, 'nestedMarkup');
+    assertScope(nestedMarkup, 'truncate', LIBRARY);
+    assertScope(nestedMarkup, 'raw', MARKUP);
+    assertScope(nestedMarkup, 'raw', LIBRARY, 0, 1);
+    assertScope(nestedMarkup, 'raw', MARKUP, 0, 2);
+    assertScope(nestedMarkup, 'newline_to_br', MARKUP);
+
+    for (const [needle, count] of [
+        ['attrMarkup', 3],
+        ['markerMarkup', 2],
+        ['keyMarkup', 2]
+    ]) {
+        const line = lineWith(markup, needle);
+        const names = [...line.line.matchAll(/\b(?:raw|newline_to_br)(?=\()/g)];
+        assert(names.length >= count, `expected ${count} markup calls in ${needle}`);
+        for (let i = 0; i < count; i += 1) {
+            const column = names[i].index;
+            const token = line.tokens.find(t => t.startIndex <= column && column < t.endIndex);
+            assert(token.scopes.includes(MARKUP), `${needle}: call ${i} missing ${MARKUP}\nScopes: ${token.scopes.join(' ')}`);
+        }
+    }
+    // The marker's fallback body is text again, where a whole `raw(…)` is legal.
+    const markerMarkup = lineWith(markup, 'markerMarkup');
+    assertScope(markerMarkup, 'raw', LIBRARY, 0, 1);
+    assertNoScope(markerMarkup, 'raw', MARKUP, 0, 1);
+
+    const notMarkup = lineWith(markup, 'notMarkup');
+    for (const needle of ['raw }', 'raw(y)', 'rawish', 'raw_text', "raw(x)'"]) {
+        assertNoScope(notMarkup, needle, MARKUP);
+    }
+
+    // An @event value is a call to a view handler with data arguments. It is
+    // plain JavaScript: the handler's name keeps the function-call scope even
+    // when it matches a library name, and nothing in its arguments gets the
+    // library scope or the markup-function rule. Only `|` and `this` are
+    // flagged there, as everywhere.
+    const handlers = tokenize(grammar, `<puzzle-view>
+  <button @click={ save(raw(x)) } @input={ newline_to_br(event.target.value) }>handlerMarkup</button>
+  <button @click={ date(x) } @input={ raw(h) } @blur={ select(currency(item.price)) }>handlerLibrary</button>
+  <button @click={ on ? date(d) : save(t('k'), truncate(s, 3)) }>handlerTernary</button>
+</puzzle-view>`);
+    const FUNCTION = 'entity.name.function.js';
+    const handlerMarkup = lineWith(handlers, 'handlerMarkup');
+    for (const needle of ['save', 'raw', 'newline_to_br']) {
+        assertScope(handlerMarkup, needle, FUNCTION);
+        assertNoScope(handlerMarkup, needle, MARKUP);
+        assertNoScope(handlerMarkup, needle, LIBRARY);
+    }
+    assertScope(handlerMarkup, 'event', 'source.js.embedded.puzzle');
+    const handlerLibrary = lineWith(handlers, 'handlerLibrary');
+    for (const needle of ['date', 'raw', 'select', 'currency']) {
+        assertScope(handlerLibrary, needle, FUNCTION);
+        assertNoScope(handlerLibrary, needle, LIBRARY);
+        assertNoScope(handlerLibrary, needle, MARKUP);
+    }
+    const handlerTernary = lineWith(handlers, 'handlerTernary');
+    for (const needle of ['date', 'save', "t('k')", 'truncate']) {
+        assertScope(handlerTernary, needle, FUNCTION);
+        assertNoScope(handlerTernary, needle, LIBRARY);
+    }
+    for (const entry of handlers) {
+        assert(
+            !entry.tokens.some(token => token.scopes.some(scope => scope.startsWith('invalid.'))),
+            `no handler construct here is flagged: ${entry.line}`
+        );
+    }
+
+    // Everything else is the compiler's: method-table membership, excluded
+    // operators and `.size` highlight as plain JavaScript.
+    const compilerRules = tokenize(grammar, `<puzzle-view>
+  <p>{ items.size } { a.foo() } { a ** 2 } { new Date() } { typeof x } { a & b } { count++ } { a = 1 } compilerTail</p>
+</puzzle-view>`);
+    const compilerLine = lineWith(compilerRules, 'compilerTail');
+    assert(
+        !compilerLine.tokens.some(token => token.scopes.some(scope => scope.startsWith('invalid.'))),
+        'compiler-only rules must not be flagged by the grammar'
+    );
+
+    // A template expression has no regex literals (D176): every `/` in one is
+    // division, whatever precedes it — a non-ASCII name, a trailing-dot
+    // number, the word `of`. Each line carries a later `/` followed by `>` (a
+    // self-closing tag) that a regex guess would close on. A `/` in <script>
+    // is still JavaScript's.
+    const REGEXP = 'string.regexp.js';
+    const DIVIDE = 'keyword.operator.arithmetic.js';
+    const division = tokenize(grammar, `<puzzle-view>
+  <p>{ café / 2 }<br/>divAccent</p>
+  <p>{ 金額 / 2 }<br/>divCjk</p>
+  {#if 価格 / 2 > 1}<br/>{/if}<i>divIf</i>
+  <p>{ 5. / 2 }<br/>divDotNumber</p>
+  <p>{ of / 2 }<br/>divOf</p>
+  <b title={ 価格 / 2 }><br/>divAttribute</b>
+  <p>{ a.価格 / 2 }<br/>divMember</p>
+  <p>{ 𝑥 / 2 }<br/>divAstral</p>
+  <p>{ 😀 / 2 }<br/>divEmoji</p>
+  <p>{ 金額/2 }<br/>divTight</p>
+  <p>{ (金額 / 2) + f(価格 / 3) }<br/>divNested</p>
+  <p>{ \`\${金額 / 2}\` }<br/>divTemplate</p>
+  <p>{ ok ? 5. / 2 : 1 }<br/>divTernary</p>
+  <p>{ a && /x/ }<br/>divNoRegex</p>
+  <button @click={ save(5. / 2) }><br/>divHandler</button>
+</puzzle-view>
+<script>
+  const re = /a\\/b/g; // scriptRegex
+</script>`);
+    for (const needle of ['divAccent', 'divCjk', 'divIf', 'divDotNumber', 'divOf', 'divAttribute', 'divMember', 'divAstral', 'divEmoji', 'divTight', 'divNested', 'divTemplate', 'divTernary', 'divNoRegex', 'divHandler']) {
+        const entry = lineWith(division, needle);
+        const expression = entry.line.slice(0, entry.line.indexOf('<br/>'));
+        const slashes = [...expression.matchAll(/\//g)].filter(m => expression[m.index - 1] !== '<');
+        assert(slashes.length > 0, `${needle}: no division in the line`);
+        for (const slash of slashes) {
+            const token = entry.tokens.find(t => t.startIndex <= slash.index && slash.index < t.endIndex);
+            assert(token.scopes.includes(DIVIDE), `${needle}: / missing ${DIVIDE}\nScopes: ${token.scopes.join(' ')}`);
+        }
+        assert(
+            !entry.tokens.some(token => token.scopes.includes(REGEXP)),
+            `${needle}: a template expression never holds a regex: ${entry.line}`
+        );
+        assertNoScope(entry, needle, 'source.js.embedded.puzzle');
+    }
+    const scriptRegex = lineWith(division, 'scriptRegex');
+    assertScope(scriptRegex, 'a\\/b', REGEXP);
+    assertScope(scriptRegex, '/g', REGEXP);
+    assertNoScope(scriptRegex, 'scriptRegex', REGEXP);
+
+    // JavaScript reads `a /* c */ / 2` with a begin/end rule that ends on the
+    // `/`, and a JSX tag that a stray `<br/>` opens ends on its `/>`. The
+    // division rule must leave both able to close, or the expression runs on
+    // past its brace to the end of the file.
+    const divisionEdges = tokenize(grammar, `<puzzle-view>
+  <p>{ a /* c */ / 2 }divAfterComment</p>
+  <p>{ a /**// 2 }divAfterTightComment</p>
+  <p>{ ok && <br/> }divStrayTag</p>
+  <p>{ f(<i/>) }divStrayTagArgument</p>
+</puzzle-view>`);
+    for (const needle of ['divAfterComment', 'divAfterTightComment', 'divStrayTag', 'divStrayTagArgument']) {
+        assertNoScope(lineWith(divisionEdges, needle), needle, 'source.js.embedded.puzzle');
+    }
+    const afterComment = lineWith(divisionEdges, 'divAfterComment');
+    assertScope(afterComment, '/*', 'comment.block.js');
+    assertScope(afterComment, '/ 2', DIVIDE);
+
+    // ---------------------------------------------------------------------
+    // Conformance: every VALID case of puzzle-lang's expressions-parse.json
+    // tokenizes with no invalid scope, in text, in a brace-only attribute and
+    // (for handler cases) in an @event value; and the interpolation closes
+    // where it should. The invalid cases for rules 2 and 3 are flagged.
+    // test/fixtures/expressions-parse.json is a copy of
+    // packages/puzzle-lang/conformance/expressions-parse.json;
+    // PUZZLE_CONFORMANCE points the test at another copy.
+    // ---------------------------------------------------------------------
+    const conformancePath = process.env.PUZZLE_CONFORMANCE || path.join(__dirname, 'fixtures', 'expressions-parse.json');
+    const conformance = JSON.parse(fs.readFileSync(conformancePath, 'utf8')).cases;
+
+    function wrapCase(testCase, position) {
+        const source = testCase.argument ? `f(${testCase.src})` : testCase.src;
+        if (testCase.handler) return `<button @click={ ${source} }>ENDMARK</button>`;
+        if (position === 'attribute') return `<b title={ ${source} }>ENDMARK</b>`;
+        return `<p>{ ${source} }ENDMARK</p>`;
+    }
+
+    function tokenizeCase(testCase, position) {
+        const entries = tokenize(grammar, `<puzzle-view>\n${wrapCase(testCase, position)}\n</puzzle-view>`);
+        return entries.slice(1, -1);
+    }
+
+    let validCount = 0;
+    for (const testCase of conformance.filter(c => c.ok)) {
+        for (const position of testCase.handler ? ['handler'] : ['text', 'attribute']) {
+            const entries = tokenizeCase(testCase, position);
+            for (const entry of entries) {
+                for (const token of entry.tokens) {
+                    const bad = token.scopes.find(scope => scope.startsWith('invalid.'));
+                    assert(!bad, `conformance "${testCase.name}" (${position}): ${JSON.stringify(entry.line.slice(token.startIndex, token.endIndex))} has ${bad}`);
+                }
+            }
+            const last = entries[entries.length - 1];
+            assertNoScope(last, 'ENDMARK', 'source.js.embedded.puzzle');
+        }
+        validCount += 1;
+    }
+    assert(validCount > 150, `expected the valid conformance cases, found ${validCount}`);
+
+    function flagged(testCase, needle, scope, occurrence = 0) {
+        for (const position of ['text', 'attribute']) {
+            const entries = tokenizeCase(testCase, position);
+            const entry = entries.find(e => e.line.includes(needle)) || entries[0];
+            assertScope(entry, needle, scope, 0, occurrence);
+        }
+    }
+    const invalidCases = conformance.filter(c => !c.ok);
+    const bySrc = src => {
+        const found = invalidCases.find(c => c.src === src);
+        assert(found, `conformance case ${JSON.stringify(src)} not found`);
+        return found;
+    };
+    flagged(bySrc('a | b'), '|', PIPE);
+    flagged(bySrc('f(a | b)'), '|', PIPE);
+    flagged(bySrc('a &&\n    b | c'), '|', PIPE);
+    flagged(bySrc('this'), 'this', THIS);
+    flagged(bySrc('user.name + this.x'), 'this', THIS);
+    flagged(bySrc('f(this)'), 'this', THIS);
+    flagged(bySrc('{ this }'), 'this', THIS);
+    flagged(bySrc('items.map(this => 1)'), 'this', THIS);
+    // Every invalid case whose error is about `|` or `this` is flagged.
+    for (const testCase of invalidCases) {
+        const pipeError = /the `\|` operator/.test(testCase.error);
+        const thisError = /^`this` is not available/.test(testCase.error);
+        if (!pipeError && !thisError) continue;
+        const entries = tokenizeCase(testCase, 'text');
+        const scope = pipeError ? PIPE : THIS;
+        assert(
+            entries.some(entry => entry.tokens.some(token => token.scopes.includes(scope))),
+            `conformance "${testCase.name}" should carry ${scope}`
+        );
+    }
 
     console.log('Puzzle TextMate grammar tests passed');
 }
