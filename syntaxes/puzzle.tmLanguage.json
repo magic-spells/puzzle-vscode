@@ -909,10 +909,11 @@
     },
 
     "expression-division": {
-      "comment": "A template expression has no regex literals (D176), so every `/` in one is division. JavaScript's regex rule guesses from the character before the `/`, and its identifier test is ASCII-only: after an emoji name or a trailing-dot number (`5. / 2`) it would open a regex that runs to the next `/>` on the line. This rule claims the `/`, with any whitespace before it (where the regex rule can begin), ahead of that guess. `//` and `/*` are left to the comment rules.",
-      "match": "\\s*(/)(?![/*])",
+      "comment": "A template expression has no regex literals (D176), so every `/` in one is division. JavaScript's regex rule guesses from the character before the `/`, and its identifier test is ASCII-only: after an emoji name or a trailing-dot number (`5. / 2`) it would open a regex that runs to the next `/>` on the line. This rule claims the `/`, with any whitespace before it (where the regex rule can begin), ahead of that guess. Block comments on the same line before the `/` are claimed with it: JavaScript reads `a /* c */ / 2` with a begin/end rule that ends on that `/`, and taking the `/` from inside it would leave the rule open past the closing brace. `//` and `/*` are otherwise left to the comment rules, and `/>` (never division: no operand starts with `>`) to the JSX tag a stray `<br/>` in an expression opens, which ends on it.",
+      "match": "\\s*((?:/\\*(?:[^*]|\\*(?!/))*\\*/\\s*)*)(/)(?![/*>])",
       "captures": {
-        "1": { "name": "keyword.operator.arithmetic.js" }
+        "1": { "patterns": [{ "include": "source.js#comment" }] },
+        "2": { "name": "keyword.operator.arithmetic.js" }
       }
     },
 

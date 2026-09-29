@@ -813,6 +813,23 @@ this.ready = true;
     assertScope(scriptRegex, '/g', REGEXP);
     assertNoScope(scriptRegex, 'scriptRegex', REGEXP);
 
+    // JavaScript reads `a /* c */ / 2` with a begin/end rule that ends on the
+    // `/`, and a JSX tag that a stray `<br/>` opens ends on its `/>`. The
+    // division rule must leave both able to close, or the expression runs on
+    // past its brace to the end of the file.
+    const divisionEdges = tokenize(grammar, `<puzzle-view>
+  <p>{ a /* c */ / 2 }divAfterComment</p>
+  <p>{ a /**// 2 }divAfterTightComment</p>
+  <p>{ ok && <br/> }divStrayTag</p>
+  <p>{ f(<i/>) }divStrayTagArgument</p>
+</puzzle-view>`);
+    for (const needle of ['divAfterComment', 'divAfterTightComment', 'divStrayTag', 'divStrayTagArgument']) {
+        assertNoScope(lineWith(divisionEdges, needle), needle, 'source.js.embedded.puzzle');
+    }
+    const afterComment = lineWith(divisionEdges, 'divAfterComment');
+    assertScope(afterComment, '/*', 'comment.block.js');
+    assertScope(afterComment, '/ 2', DIVIDE);
+
     // ---------------------------------------------------------------------
     // Conformance: every VALID case of puzzle-lang's expressions-parse.json
     // tokenizes with no invalid scope, in text, in a brace-only attribute and
