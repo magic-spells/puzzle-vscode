@@ -69,7 +69,7 @@ export default class AlbumView extends PuzzleView {
 </style>
 ```
 
-The grammar tracks the **Puzzle 0.8.0** template grammar and recognizes:
+The grammar tracks the **Puzzle 0.9.0** template grammar and recognizes:
 
 - Template expressions as JavaScript expressions (D176): paths, literals,
   operators, `??` and `?.`, template literals, object and array literals,
@@ -127,7 +127,12 @@ The grammar tracks the **Puzzle 0.8.0** template grammar and recognizes:
   track wbr`) with or without the slash: `<br>`, `<br/>` and
   `<input value={ x } readonly>` are whole elements
 - `@event={ expression }` and colon modifiers such as
-  `@keydown:enter:prevent={ submit(event) }`, including `@click:outside`
+  `@keydown:enter:prevent={ submit(event) }`, including `@click:outside` and
+  the listener options `passive` and `capture` (D187), alone or combined
+  (`@wheel:passive`, `@click:capture:once`)
+- Spread attributes on component tags: a bare `{...expr}` in attribute
+  position (`<Card {...props} title="x">`, `<Component is={ cards[t] }
+  {...embed.props}>`), with the expression highlighted as JavaScript
 - The directive attributes `key`, `island`, `ref`, and `flip`
 - The composition markers `<Children>`, `<Slot>`, `<Portal>` and `<Snippet>`,
   distinct from ordinary capitalized component tags. `<Snippet>` (D166) is
@@ -178,6 +183,7 @@ standard installation location.
 | Event/action sigil (`@`) | `keyword.operator.event.puzzle` |
 | Event/action name | `support.function.event.puzzle` |
 | Event modifier | `storage.modifier.event.puzzle` |
+| Spread operator (`{...expr}`) | `keyword.operator.spread.puzzle` |
 | Library function call | `support.function.library.puzzle` |
 | Template expression | `meta.embedded.expression.puzzle` |
 | `@event` handler value | `meta.embedded.handler.puzzle` |

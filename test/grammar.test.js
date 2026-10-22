@@ -388,6 +388,31 @@ async function main() {
     assertScope(lineWith(tokens, '@click:outside'), ':outside', 'storage.modifier.event.puzzle');
     assertNoScope(lineWith(tokens, '@click:outside'), ':outside', 'invalid.illegal.event-modifier.puzzle');
 
+    // The `passive` and `capture` event modifiers (D187), alone and combined.
+    const listenerOptions = lineWith(tokens, '@wheel:passive');
+    assertScope(listenerOptions, ':passive', 'storage.modifier.event.puzzle');
+    assertNoScope(listenerOptions, ':passive', 'invalid.illegal.event-modifier.puzzle');
+    assertScope(listenerOptions, ':capture:once', 'storage.modifier.event.puzzle');
+    assertNoScope(listenerOptions, ':capture:once', 'invalid.illegal.event-modifier.puzzle');
+    assertScope(listenerOptions, 'track', 'source.js.embedded.puzzle');
+
+    // Spread attributes: {...expr} in attribute position.
+    const spread = lineWith(tokens, '{...props}');
+    assertScope(spread, '{...props}', 'punctuation.section.embedded.begin.puzzle');
+    assertScope(spread, '...', 'keyword.operator.spread.puzzle');
+    assertScope(spread, 'props', 'source.js.embedded.puzzle');
+    assertScope(spread, 'props', 'meta.embedded.expression.puzzle');
+    assertScope(spread, '}', 'punctuation.section.embedded.end.puzzle');
+    assertNoScope(spread, 'props', 'entity.other.attribute-name.html');
+    // The attribute after a spread is still an attribute.
+    assertScope(spread, 'title', 'entity.other.attribute-name.html');
+    assertScope(spread, 'spread first', 'string.quoted.double.html');
+    const spreadMember = lineWith(tokens, 'embed.props');
+    assertScope(spreadMember, '...', 'keyword.operator.spread.puzzle');
+    assertScope(spreadMember, 'embed', 'source.js.embedded.puzzle');
+    assertScope(spreadMember, 'props', 'source.js.embedded.puzzle');
+    assertScope(spreadMember, 'cards', 'source.js.embedded.puzzle');
+
     // {#raw} … {/raw} (D150): braces are inert, HTML stays structural.
     const rawOpen = lineWith(tokens, '{#raw}');
     assertScope(rawOpen, 'raw', 'keyword.control.raw.puzzle');
@@ -464,6 +489,7 @@ async function main() {
 
     const edgeCases = tokenize(grammar, `<puzzle-view>
   <button @click.prevent={ go } @click:bogus={ go }></button>
+  <button @click.capture={ go } @scroll.passive={ go }></button>
   {:elsif stale}
   { count || fallback }
   {#unless done}spaced closer{/ unless }
@@ -476,6 +502,8 @@ const stillJavaScript = true;
 
     assertScope(lineWith(edgeCases, '@click.prevent'), '.prevent', 'invalid.illegal.event-modifier.puzzle');
     assertScope(lineWith(edgeCases, '@click:bogus'), ':bogus', 'invalid.illegal.event-modifier.puzzle');
+    assertScope(lineWith(edgeCases, '@click.capture'), '.capture', 'invalid.illegal.event-modifier.puzzle');
+    assertScope(lineWith(edgeCases, '@scroll.passive'), '.passive', 'invalid.illegal.event-modifier.puzzle');
     assertScope(lineWith(edgeCases, '{:elsif'), 'elsif', 'invalid.illegal.directive.puzzle');
     assertScope(lineWith(edgeCases, 'count || fallback'), '||', 'keyword.operator.logical.js');
     assertScope(lineWith(edgeCases, 'stillJavaScript'), 'stillJavaScript', 'source.js.embedded.puzzle');

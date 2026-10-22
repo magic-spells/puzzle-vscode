@@ -82,6 +82,9 @@
   <div ref="listRoot" island key={ items[0] } flip></div>
   <div flip={ offset } key="row-{ offset }" data-island="not-a-directive"></div>
   <button @click:outside={ close() }>Close</button>
+  <div @wheel:passive={ scroll(event) } @click:capture:once={ track() }></div>
+  <Card {...props} title="spread first"></Card>
+  <Component is={ cards[t] } { ...embed.props }></Component>
 
   {#raw}
     Inert braces: { notInterpolated } plus {#if never}branchless{/if} plus { pipes | notAFunction(this) }
