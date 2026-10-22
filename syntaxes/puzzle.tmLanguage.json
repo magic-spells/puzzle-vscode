@@ -292,6 +292,7 @@
         { "include": "#event-attribute-invalid-modifier" },
         { "include": "#event-attribute-missing-expression" },
         { "include": "#puzzle-directive-attributes" },
+        { "include": "#spread-attribute" },
         { "include": "#dynamic-attribute" },
         { "include": "#quoted-attribute-double" },
         { "include": "#quoted-attribute-single" },
@@ -400,7 +401,7 @@
     },
 
     "event-attribute-dotted-modifier": {
-      "begin": "(@)([$A-Za-z_][$\\w.-]*?)(\\.)((?:prevent|stop|once|outside|enter|escape|tab|space|up|down|left|right|backspace|delete))\\s*(=)\\s*(\\{)",
+      "begin": "(@)([$A-Za-z_][$\\w.-]*?)(\\.)((?:prevent|stop|once|outside|passive|capture|enter|escape|tab|space|up|down|left|right|backspace|delete))\\s*(=)\\s*(\\{)",
       "beginCaptures": {
         "1": { "name": "keyword.operator.event.puzzle" },
         "2": { "name": "support.function.event.puzzle" },
@@ -420,7 +421,7 @@
     },
 
     "event-attribute-valid": {
-      "begin": "(@)([$A-Za-z_][$\\w.-]*)((?::(?:prevent|stop|once|outside|enter|escape|tab|space|up|down|left|right|backspace|delete))*)\\s*(=)\\s*(\\{)",
+      "begin": "(@)([$A-Za-z_][$\\w.-]*)((?::(?:prevent|stop|once|outside|passive|capture|enter|escape|tab|space|up|down|left|right|backspace|delete))*)\\s*(=)\\s*(\\{)",
       "beginCaptures": {
         "1": { "name": "keyword.operator.event.puzzle" },
         "2": { "name": "support.function.event.puzzle" },
@@ -569,6 +570,22 @@
       "captures": {
         "1": { "name": "keyword.control.directive.puzzle" }
       }
+    },
+
+    "spread-attribute": {
+      "begin": "(\\{)\\s*(\\.\\.\\.)",
+      "beginCaptures": {
+        "1": { "name": "punctuation.section.embedded.begin.puzzle" },
+        "2": { "name": "keyword.operator.spread.puzzle" }
+      },
+      "end": "\\}",
+      "endCaptures": {
+        "0": { "name": "punctuation.section.embedded.end.puzzle" }
+      },
+      "contentName": "meta.embedded.expression.puzzle source.js.embedded.puzzle",
+      "patterns": [
+        { "include": "#javascript-expression" }
+      ]
     },
 
     "dynamic-attribute": {
