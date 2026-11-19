@@ -182,7 +182,7 @@ function componentTemplate(name: string): string {
 import { PuzzleView } from '@magic-spells/puzzle';
 
 export default class ${name} extends PuzzleView {
-\tdata(params, props) {
+\tdata({ props }) {
 \t\treturn {};
 \t}
 
