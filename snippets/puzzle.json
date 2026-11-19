@@ -10,7 +10,7 @@
       "import { PuzzleView } from '@magic-spells/puzzle';",
       "",
       "export default class ${2:ComponentName} extends PuzzleView {",
-      "\tdata(params, props) {",
+      "\tdata({ props }) {",
       "\t\treturn {};",
       "\t}",
       "",
@@ -192,13 +192,26 @@
   "Data Method": {
     "prefix": "pdata",
     "body": [
-      "data(params, props) {",
+      "data({ ${1:props} }) {",
       "\treturn {",
-      "\t\t${1:key}: ${2:value}",
+      "\t\t${2:key}: ${3:value}",
       "\t};",
       "}"
     ],
-    "description": "Create a Puzzle data method"
+    "description": "Create a Puzzle data method (takes { params, props, shared })"
+  },
+  "Share Method": {
+    "prefix": "pshare",
+    "body": [
+      "share() {",
+      "\tconst { ${1:value} } = this.getData();",
+      "\treturn {",
+      "\t\t${1:value},",
+      "\t\t${2:set}: (next) => this.setState({ ${1:value}: next }),",
+      "\t};",
+      "}"
+    ],
+    "description": "Share values and callbacks with nested views (read as shared.<componentName>)"
   },
   "Events Field": {
     "prefix": "pevents",
