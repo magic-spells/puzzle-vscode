@@ -224,13 +224,13 @@
     "body": ["this.ctx.router.push('${1:/path}');"],
     "description": "Navigate with the Puzzle router"
   },
-  "Set Data": {
-    "prefix": "psetdata",
+  "Set State": {
+    "prefix": "psetstate",
     "body": [
-      "this.setData({",
+      "this.setState({",
       "\t${1:key}: ${2:value}",
       "});"
     ],
-    "description": "Patch reactive view data"
+    "description": "Write view state (setState)"
   }
 }
