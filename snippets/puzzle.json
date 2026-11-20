@@ -145,6 +145,13 @@
     ],
     "description": "Teleport children into the framework portal outlet (paired, attribute-free)"
   },
+  "Outlet": {
+    "prefix": "poutlet",
+    "body": [
+      "<Outlet/>"
+    ],
+    "description": "Where the routed page renders in a layout or view (Puzzle 0.10; replaces a bare <Slot/>)"
+  },
   "Snippet": {
     "prefix": "psnippet",
     "body": [

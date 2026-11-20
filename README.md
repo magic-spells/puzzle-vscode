@@ -134,8 +134,10 @@ The grammar tracks the **Puzzle 0.9.0** template grammar and recognizes:
   position (`<Card {...props} title="x">`, `<Component is={ cards[t] }
   {...embed.props}>`), with the expression highlighted as JavaScript
 - The directive attributes `key`, `island`, `ref`, and `flip`
-- The composition markers `<Children>`, `<Slot>`, `<Portal>` and `<Snippet>`,
-  distinct from ordinary capitalized component tags. `<Snippet>` (D166) is
+- The composition markers `<Children>`, `<Outlet>`, `<Slot>`, `<Portal>` and
+  `<Snippet>`, distinct from ordinary capitalized component tags. `<Outlet>`
+  (Puzzle 0.10, D199) is the router outlet in a layout or view, the tag a bare
+  `<Slot/>` used to be; `<Slot>` now always takes a `name`. `<Snippet>` (D166) is
   0.7.0's fourth marker: `fits` is its only valued attribute and every other
   attribute is a bare parameter declaration (`<Snippet fits="row" user group>`)
 - Marker arguments (D166): a brace-valued attribute on `<Children>` or `<Slot>`
@@ -147,7 +149,7 @@ The grammar tracks the **Puzzle 0.9.0** template grammar and recognizes:
   `<概要>` and `<_x>` are components and `<straße-karte>` is an element
 
 Legacy `{#each}`, `{:elsif}`, dotted event modifiers such as `@click.prevent`,
-and lowercase markers such as `<slot>` or `<children>` are intentionally marked
+and lowercase markers such as `<slot>`, `<children>` or `<outlet>` are intentionally marked
 invalid because the Puzzle compiler does not accept them. `{#raw}` inside an
 attribute value is flagged for the same reason, and so is a void element's
 closing tag (`</br>`, `</input>`), which the compiler rejects.

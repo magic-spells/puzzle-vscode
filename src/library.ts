@@ -2,7 +2,8 @@
 // PuzzleKit's `link` and `timeago`, with the signatures the runtime takes
 // (types/index.d.ts `LibraryFunctions`). A template calls them bare, like
 // `{ currency(price) }`. Completion hints only: apps register their own
-// functions through the `formatters` config map.
+// functions through the `functions` config map (renamed from `formatters`
+// in Puzzle 0.10).
 export interface LibraryFunction {
     name: string;
     signature: string;
