@@ -50,7 +50,8 @@
       {#if items.length}<ItemCard item={ items[0] } />{:else}<p>Fallback body</p>{/if}
     </Children>
   </Card>
-  <Slot>{ compact_number(offset) } remaining{#svg 'icons/empty.svg'}</Slot>
+  <Outlet>{ compact_number(offset) } remaining{#svg 'icons/empty.svg'}</Outlet>
+  <Outlet/>
   <Children/>
   <Slot name="footer"/>
 
@@ -65,6 +66,7 @@
   <Slot name="row" user={ items[0] }>no rows</Slot>
   <Children user={ items[0] } group={ items }>no children</Children>
   <SnippetHost/>
+  <OutletFrame/>
 
   <Frame.Wrapper class="dotted">
     <Frame.Content>{ title }</Frame.Content>
@@ -102,6 +104,8 @@
   <slot name="nope"></slot>
   <children></children>
   <portal></portal>
+  <outlet></outlet>
+  <outlet-frame class="not-a-marker"></outlet-frame>
   <slot-machine class="not-a-marker"></slot-machine>
 
   <p class="{#raw}illegal in attribute{/raw}">attribute raw</p>
@@ -123,7 +127,7 @@ interface Item {
 }
 
 export default class TestComponent extends PuzzleView {
-  data(params: Record<string, string>, props: { items?: Item[] }) {
+  data({ props }: { props: { items?: Item[] } }) {
     return {
       active: true,
       error: null,

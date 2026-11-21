@@ -161,8 +161,8 @@ async function main() {
     assertScope(lineWith(tokens, '{#commentary}'), 'commentary', 'invalid.illegal.directive.puzzle');
 
     // Paired composition markers (D141) — <Slot name="x">…</Slot>,
-    // <Children>…</Children>, <Slot>…</Slot>, <Portal>…</Portal>. The grammar
-    // resolves the four markers ahead of ordinary capitalized component tags
+    // <Children>…</Children>, <Outlet>…</Outlet>, <Portal>…</Portal>. The grammar
+    // resolves the five markers ahead of ordinary capitalized component tags
     // and gives them their own scope; fallback bodies stay live template
     // content.
     const namedSlot = lineWith(tokens, '<Slot name="header">');
@@ -184,13 +184,20 @@ async function main() {
     assertScope(slotFallbackIf, 'items[0]', 'source.js.embedded.puzzle');
     assertNoScope(slotFallbackIf, 'Fallback body', 'source.js.embedded.puzzle');
 
-    const bareSlot = lineWith(tokens, '<Slot>');
-    assertScope(bareSlot, 'Slot', 'entity.name.tag.marker.puzzle');
-    assertScope(bareSlot, 'Slot', 'entity.name.tag.marker.puzzle', 0, 1);
-    assertScope(bareSlot, 'offset', 'source.js.embedded.puzzle');
-    assertScope(bareSlot, 'compact_number', 'support.function.library.puzzle');
-    assertScope(bareSlot, 'svg', 'support.function.inline-svg.puzzle');
-    assertNoScope(bareSlot, 'remaining', 'source.js.embedded.puzzle');
+    // <Outlet> (D199) is the router outlet: the 0.10 name for what a bare
+    // <Slot/> used to be in a layout or view. it is a marker, may be paired
+    // with a fallback body, and that body stays live template content.
+    const pairedOutlet = lineWith(tokens, '<Outlet>');
+    assertScope(pairedOutlet, 'Outlet', 'entity.name.tag.marker.puzzle');
+    assertScope(pairedOutlet, 'Outlet', 'entity.name.tag.marker.puzzle', 0, 1);
+    assertNoScope(pairedOutlet, 'Outlet', 'entity.name.tag.component.puzzle');
+    assertScope(pairedOutlet, 'offset', 'source.js.embedded.puzzle');
+    assertScope(pairedOutlet, 'compact_number', 'support.function.library.puzzle');
+    assertScope(pairedOutlet, 'svg', 'support.function.inline-svg.puzzle');
+    assertNoScope(pairedOutlet, 'remaining', 'source.js.embedded.puzzle');
+    // the self-closing form is a marker too, never a component
+    assertScope(lineWith(tokens, '<Outlet/>'), 'Outlet', 'entity.name.tag.marker.puzzle');
+    assertNoScope(lineWith(tokens, '<Outlet/>'), 'Outlet', 'entity.name.tag.component.puzzle');
 
     // The self-closing forms still highlight identically.
     assertScope(lineWith(tokens, '<Children/>'), 'Children', 'entity.name.tag.marker.puzzle');
@@ -240,6 +247,9 @@ async function main() {
     // component.
     assertScope(lineWith(tokens, '<SnippetHost/>'), 'SnippetHost', 'entity.name.tag.component.puzzle');
     assertNoScope(lineWith(tokens, '<SnippetHost/>'), 'SnippetHost', 'entity.name.tag.marker.puzzle');
+    // …and the same for a component whose name only starts with Outlet.
+    assertScope(lineWith(tokens, '<OutletFrame/>'), 'OutletFrame', 'entity.name.tag.component.puzzle');
+    assertNoScope(lineWith(tokens, '<OutletFrame/>'), 'OutletFrame', 'entity.name.tag.marker.puzzle');
 
     // Dotted component tags — component families (D167). The whole member
     // path carries the component scope, in open, close and self-closing form.
@@ -279,7 +289,7 @@ async function main() {
   <Frame:Wrapper/> uL
   <Frame./> uM
   <Slot.Foo/> uN
-  <Children/><Slot/><Slot name="row"/> uO
+  <Children/><Outlet/><Slot name="row"/> uO
   under <$50 uP
 </puzzle-view>`);
     const tagLine = marker => lineWith(unicodeTags, marker);
@@ -310,8 +320,8 @@ async function main() {
     assertScope(tagLine('uN'), 'Slot.Foo', COMPONENT, 7);
     assertNoScope(tagLine('uN'), 'Slot.Foo', 'entity.name.tag.marker.puzzle');
     assertScope(tagLine('uO'), 'Children', 'entity.name.tag.marker.puzzle');
+    assertScope(tagLine('uO'), 'Outlet', 'entity.name.tag.marker.puzzle');
     assertScope(tagLine('uO'), 'Slot', 'entity.name.tag.marker.puzzle');
-    assertScope(tagLine('uO'), 'Slot', 'entity.name.tag.marker.puzzle', 0, 1);
     // '$' never starts a tag name: `<$50` is text.
     assertNoScope(tagLine('uP'), '$50', COMPONENT);
     assertNoScope(tagLine('uP'), '$50', ELEMENT);
@@ -321,9 +331,14 @@ async function main() {
     assertScope(lineWith(tokens, '<children>'), 'children', 'invalid.illegal.marker.puzzle');
     assertScope(lineWith(tokens, '<children>'), 'children', 'invalid.illegal.marker.puzzle', 0, 1);
     assertScope(lineWith(tokens, '<portal>'), 'portal', 'invalid.illegal.marker.puzzle');
+    // <outlet> steers to <Outlet/> (D134), open and close tag alike
+    assertScope(lineWith(tokens, '<outlet>'), 'outlet', 'invalid.illegal.marker.puzzle');
+    assertScope(lineWith(tokens, '<outlet>'), 'outlet', 'invalid.illegal.marker.puzzle', 0, 1);
     // …but a tag that merely starts with a marker name is ordinary HTML.
     assertScope(lineWith(tokens, '<slot-machine'), 'slot-machine', 'entity.name.tag.html');
     assertNoScope(lineWith(tokens, '<slot-machine'), 'slot-machine', 'invalid.illegal.marker.puzzle');
+    assertScope(lineWith(tokens, '<outlet-frame'), 'outlet-frame', 'entity.name.tag.html');
+    assertNoScope(lineWith(tokens, '<outlet-frame'), 'outlet-frame', 'invalid.illegal.marker.puzzle');
 
     // The \{ / \} brace escape. In text and in attribute values a backslashed
     // brace is a literal character, so it must NOT open an interpolation or a
